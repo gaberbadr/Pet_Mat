@@ -1,0 +1,6 @@
+@petmat_HostAddress = http://localhost:5078
+
+GET {{petmat_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
