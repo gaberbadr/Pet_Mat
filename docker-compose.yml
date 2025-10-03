@@ -36,7 +36,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: petmat-sql
     environment:
-      SA_PASSWORD: "${DB_PASSWORD:-petmat123}"
+      SA_PASSWORD: "${DB_PASSWORD:-Your_passwordpetmat123}"
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Express"
     ports:
