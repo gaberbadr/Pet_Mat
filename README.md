@@ -9,7 +9,7 @@ docker-compose up -d
 For Frontend Developer (without code):
 ```
 #1. database
-docker run -d --name petmat-sql -e "SA_PASSWORD=Your_password123" -e "ACCEPT_EULA=Y" -e "MSSQL_PID=Express" -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+docker run -d --name petmat-sql -e "SA_PASSWORD=Your_passwordpetmat123" -e "ACCEPT_EULA=Y" -e "MSSQL_PID=Express" -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
 
 #2. Add .env file in folder
 
@@ -21,10 +21,10 @@ docker run -d -p 5000:8080 --env-file .env --name petmat-api gaberbadr1/petmat-a
 .env(delete one of Database Configuration)
 ```
 #1.Database Configuration (for backend)
-ConnectionStrings__DefaultConnection=Server=db;Database=yourDB;User Id=sa;Password=Your_password;TrustServerCertificate=True;
+ConnectionStrings__DefaultConnection=Server=db;Database=yourDB;User Id=sa;Password=Your_passwordpetmat123;TrustServerCertificate=True;
 
 #2.Database Configuration (for frontend)
-#ConnectionStrings__DefaultConnection=Server=host.docker.internal,1433;Database=yourDB;User Id=sa;Password=Your_password;TrustServerCertificate=True;
+#ConnectionStrings__DefaultConnection=Server=host.docker.internal,1433;Database=yourDB;User Id=sa;Password=Your_passwordpetmat123;TrustServerCertificate=True;
 
 # JWT Configuration
 JWT__Key=ffgfsgegfgfgfgfgffggfggf
