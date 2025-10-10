@@ -14,6 +14,8 @@ namespace CoreLayer.Entities.Animals
         [MaxLength(50)]
         public string Name { get; set; }
 
+        public bool IsActive { get; set; } = true;
+
         // Navigation Properties
         public ICollection<Animal> Animals { get; set; }
     }

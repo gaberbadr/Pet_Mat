@@ -18,6 +18,7 @@ namespace CoreLayer.Entities.Animals
         [Required]
         [MaxLength(100)]
         public string Name { get; set; }
+        public bool IsActive { get; set; } = true;
 
         // Navigation Properties
         public ICollection<SubSpecies> SubSpecies { get; set; }

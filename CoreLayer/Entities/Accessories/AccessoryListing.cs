@@ -40,6 +40,8 @@ namespace CoreLayer.Entities.Accessories
 
         public double Latitude { get; set; }
 
+        public bool IsActive { get; set; } = true;
+
         public double Longitude { get; set; }
 
         [MaxLength(200)]

@@ -29,9 +29,10 @@ namespace CoreLayer.Entities.Animals
 
         public int AnimalId { get; set; }
 
+
         public string OwnerId { get; set; }
 
-        public string ExtraPropertiesJson { get; set; }
+        public string? ExtraPropertiesJson { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

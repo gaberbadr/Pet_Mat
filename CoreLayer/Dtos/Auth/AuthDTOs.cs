@@ -127,15 +127,4 @@ namespace CoreLayer.Dtos.Auth
         public bool HasPassword { get; set; }
         public string ProfilePhotoUrl { get; set; }
     }
-
-    public class SuccessResponseDto
-    {
-        public string Message { get; set; }
-    }
-
-    public class ErrorResponseDto
-    {
-        public string Message { get; set; }
-        public Dictionary<string, string[]> Errors { get; set; }
-    }
 }

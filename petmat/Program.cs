@@ -1,8 +1,10 @@
 
 using System;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using CoreLayer;
+using CoreLayer.AutoMapper.AnimalMapping;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Helper.EmailSend;
 using CoreLayer.Service_Interface;
@@ -18,9 +20,11 @@ using petmat.Middleware;
 using RepositoryLayer;
 using RepositoryLayer.Data.Context;
 using RepositoryLayer.Data.Data_seeding;
+using ServiceLayer.Services.Admin;
 using ServiceLayer.Services.Auth.AuthUser;
 using ServiceLayer.Services.Auth.Jwt;
 using ServiceLayer.Services.Auth.LoginRateLimiter;
+using ServiceLayer.Services.User;
 
 namespace petmat
 {
@@ -38,12 +42,15 @@ namespace petmat
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
+
             // Database configuration
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
-          
+            //auto mapper
+            builder.Services.AddAutoMapper(typeof(Program), typeof(AdminMappingProfile), typeof(UserMappingProfile));
+
 
             // Configure Identity
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -65,6 +72,8 @@ namespace petmat
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped<ILoginRateLimiterService, LoginRateLimiterService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IAdminService, AdminService>();
+            builder.Services.AddScoped<IUserService, UserService>();
 
             // JWT Configuration
             var jwtKey = builder.Configuration["JWT:Key"] ?? "DefaultKeyForDevelopmentOnlyNotForProduction123";
@@ -150,7 +159,10 @@ namespace petmat
                         }));
             });
 
+
+
             var app = builder.Build();
+
 
 
             // Apply migrations
@@ -191,12 +203,11 @@ namespace petmat
                 });
             }
 
-
-
             app.UseHttpsRedirection();
 
             app.UseRateLimiter();
             app.UseAuthentication();
+
 
             // Enable serving static files from wwwroot
             app.UseStaticFiles();
@@ -259,6 +270,7 @@ namespace petmat
 
             // Custom middleware
             app.UseMiddleware<ExceptionMiddleware>();
+            app.UseMiddleware<UserActiveStatusMiddleware>();
             app.UseStatusCodePagesWithReExecute("/error/{0}");
 
 

@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using System.Web;
 using CoreLayer;
+using CoreLayer.Dtos;
 using CoreLayer.Dtos.Auth;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Helper.Documents;
@@ -14,6 +15,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using petmat.Errors;
 using RepositoryLayer.Data.Context;
 
 namespace petmat.Controllers
@@ -38,39 +40,39 @@ namespace petmat.Controllers
 
         // ========== Send OTP Code ==========
         [ProducesResponseType(typeof(SuccessResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
         [HttpPost("send-verification-code")]
         public async Task<IActionResult> SendVerificationCode([FromBody] EmailDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(new ErrorResponseDto { Message = "Invalid email format" });
+                return BadRequest(new ApiErrorResponse(400, "Invalid email format"));
 
             var (success, message) = await _authService.SendVerificationCodeAsync(dto.Email);
 
             if (!success)
-                return StatusCode(500, new ErrorResponseDto { Message = message });
+                return StatusCode(500, new ApiErrorResponse(500, message));
 
             return Ok(new SuccessResponseDto { Message = message });
         }
 
         // ========== Verify OTP & SignIn ==========
         [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
         [HttpPost("verify-code")]
         public async Task<IActionResult> VerifyCode([FromBody] VerifyCodeDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(new ErrorResponseDto { Message = "Invalid input" });
+                return BadRequest(new ApiErrorResponse(400, "Invalid input"));
 
             var (success, message, token) = await _authService.VerifyCodeAsync(dto.Email, dto.Code);
 
             if (!success)
             {
                 return message.Contains("expired")
-                    ? BadRequest(new ErrorResponseDto { Message = message })
-                    : Unauthorized(new ErrorResponseDto { Message = message });
+                    ? BadRequest(new ApiErrorResponse(400, message))
+                    : Unauthorized(new ApiErrorResponse(401, message));
             }
 
             return Ok(token);
@@ -78,14 +80,14 @@ namespace petmat.Controllers
 
         // ========== Email/Password Login ==========
         [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status429TooManyRequests)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status429TooManyRequests)]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(new ErrorResponseDto { Message = "Invalid input" });
+                return BadRequest(new ApiErrorResponse(400, "Invalid input"));
 
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             var (success, message, token, banMinutes) = await _authService.LoginAsync(dto.Email, dto.Password, ipAddress);
@@ -93,11 +95,11 @@ namespace petmat.Controllers
             if (!success)
             {
                 if (banMinutes.HasValue)
-                    return StatusCode(429, new ErrorResponseDto { Message = message });
+                    return StatusCode(429, new ApiErrorResponse(429, message));
 
                 return message.Contains("No password set")
-                    ? BadRequest(new ErrorResponseDto { Message = message })
-                    : Unauthorized(new ErrorResponseDto { Message = message });
+                    ? BadRequest(new ApiErrorResponse(400, message))
+                    : Unauthorized(new ApiErrorResponse(401, message));
             }
 
             return Ok(token);
@@ -105,8 +107,8 @@ namespace petmat.Controllers
 
         // ========== Create Password ==========
         [ProducesResponseType(typeof(SuccessResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("create-password")]
         public async Task<IActionResult> CreatePassword([FromBody] CreatePasswordDto dto)
@@ -116,16 +118,16 @@ namespace petmat.Controllers
 
             if (!success)
                 return message.Contains("not found")
-                    ? Unauthorized(new ErrorResponseDto { Message = message })
-                    : BadRequest(new ErrorResponseDto { Message = message });
+                    ? Unauthorized(new ApiErrorResponse(401, message))
+                    : BadRequest(new ApiErrorResponse(400, message));
 
             return Ok(new SuccessResponseDto { Message = message });
         }
 
         // ========== Update Password ==========
         [ProducesResponseType(typeof(SuccessResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut("update-password")]
         public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordDto dto)
@@ -135,15 +137,15 @@ namespace petmat.Controllers
 
             if (!success)
                 return message.Contains("not found")
-                    ? Unauthorized(new ErrorResponseDto { Message = message })
-                    : BadRequest(new ErrorResponseDto { Message = message });
+                    ? Unauthorized(new ApiErrorResponse(401, message))
+                    : BadRequest(new ApiErrorResponse(400, message));
 
             return Ok(new SuccessResponseDto { Message = message });
         }
 
         // ========== Create/Update Profile Info ==========
         [ProducesResponseType(typeof(SuccessResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("profile/name")]
         public async Task<IActionResult> UpdateName([FromBody] UpdateNameDto dto)
@@ -152,13 +154,13 @@ namespace petmat.Controllers
             var (success, message) = await _authService.UpdateNameAsync(userId, dto.FirstName, dto.LastName);
 
             if (!success)
-                return Unauthorized(new ErrorResponseDto { Message = message });
+                return Unauthorized(new ApiErrorResponse(401, message));
 
             return Ok(new SuccessResponseDto { Message = message });
         }
 
         [ProducesResponseType(typeof(SuccessResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("profile/phone")]
         public async Task<IActionResult> UpdatePhone([FromBody] UpdatePhoneDto dto)
@@ -167,14 +169,14 @@ namespace petmat.Controllers
             var (success, message) = await _authService.UpdatePhoneAsync(userId, dto.PhoneNumber);
 
             if (!success)
-                return Unauthorized(new ErrorResponseDto { Message = message });
+                return Unauthorized(new ApiErrorResponse(401, message));
 
             return Ok(new SuccessResponseDto { Message = message });
         }
 
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)] 
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("profile/picture")]
         public async Task<IActionResult> UpdateProfilePicture([FromForm] UpdateProfilePictureDto dto)
@@ -186,15 +188,15 @@ namespace petmat.Controllers
 
             if (!success)
                 return message.Contains("not found")
-                    ? Unauthorized(new ErrorResponseDto { Message = message })
-                    : BadRequest(new ErrorResponseDto { Message = message });
+                    ? Unauthorized(new ApiErrorResponse(401, message))
+                    : BadRequest(new ApiErrorResponse(400, message));
 
             return Ok(new { Message = message, ProfilePictureUrl = pictureUrl });
         }
 
         // ========== Address Management ==========
         [ProducesResponseType(typeof(SuccessResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("profile/address")]
         public async Task<IActionResult> CreateOrUpdateAddress([FromBody] AddressDto dto)
@@ -203,7 +205,7 @@ namespace petmat.Controllers
             var (success, message) = await _authService.CreateOrUpdateAddressAsync(userId, dto);
 
             if (!success)
-                return Unauthorized(new ErrorResponseDto { Message = message });
+                return Unauthorized(new ApiErrorResponse(401, message));
 
             return Ok(new SuccessResponseDto { Message = message });
         }
@@ -218,7 +220,7 @@ namespace petmat.Controllers
                 GoogleDefaults.AuthenticationScheme, redirectUrl);
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
-        
+
         [ProducesResponseType(StatusCodes.Status302Found)] // Redirect
         [HttpGet("google-callback")]
         public async Task<IActionResult> GoogleCallback([FromQuery] string returnUrl = "")
@@ -256,76 +258,76 @@ namespace petmat.Controllers
 
         // ========== Me ==========
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("me")]
         public async Task<IActionResult> Me()
         {
             var userId = User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new ErrorResponseDto { Message = "User not authenticated" });
+                return Unauthorized(new ApiErrorResponse(401, "User not authenticated"));
 
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var (success, message, profile) = await _authService.GetUserProfileAsync(userId, baseUrl);
 
             if (!success)
-                return Unauthorized(new ErrorResponseDto { Message = message });
+                return Unauthorized(new ApiErrorResponse(401, message));
 
             return Ok(profile);
         }
 
         // ========== Refresh Token ==========
         [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
         [HttpPost("refresh-token")]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequestDto request)
         {
             if (!ModelState.IsValid)
-                return BadRequest(new ErrorResponseDto { Message = "Invalid request" });
+                return BadRequest(new ApiErrorResponse(400, "Invalid request"));
 
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             var (success, message, token) = await _authService.RefreshTokenAsync(request.RefreshToken, ipAddress);
 
             if (!success)
-                return Unauthorized(new ErrorResponseDto { Message = message });
+                return Unauthorized(new ApiErrorResponse(401, message));
 
             return Ok(token);
         }
 
         // ========== Revoke Token ==========
         [ProducesResponseType(typeof(SuccessResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
         [HttpPost("revoke-refresh")]
         public async Task<IActionResult> Revoke([FromBody] RefreshRequestDto request)
         {
             if (!ModelState.IsValid)
-                return BadRequest(new ErrorResponseDto { Message = "Invalid request" });
+                return BadRequest(new ApiErrorResponse(400, "Invalid request"));
 
             var (success, message) = await _authService.RevokeTokenAsync(request.RefreshToken);
 
             if (!success)
-                return NotFound(new ErrorResponseDto { Message = message });
+                return NotFound(new ApiErrorResponse(404, message));
 
             return Ok(new SuccessResponseDto { Message = message });
         }
 
         // ========== Logout ==========
         [ProducesResponseType(typeof(SuccessResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
             var userId = User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new ErrorResponseDto { Message = "User not authenticated" });
+                return Unauthorized(new ApiErrorResponse(401, "User not authenticated"));
 
             var (success, message) = await _authService.LogoutAsync(userId);
 
             if (!success)
-                return Unauthorized(new ErrorResponseDto { Message = message });
+                return Unauthorized(new ApiErrorResponse(401, message));
 
             return Ok(new SuccessResponseDto { Message = message });
         }

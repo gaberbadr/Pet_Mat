@@ -39,8 +39,7 @@ namespace CoreLayer.Entities.Animals
         public string ImageUrl { get; set; }
 
         public bool IsActive { get; set; } = true;
-
-        public string ExtraPropertiesJson { get; set; }
+        public string? ExtraPropertiesJson { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

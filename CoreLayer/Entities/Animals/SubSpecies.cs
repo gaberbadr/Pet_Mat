@@ -17,6 +17,8 @@ namespace CoreLayer.Entities.Animals
 
         public int SpeciesId { get; set; }
 
+        public bool IsActive { get; set; } = true;
+
         // Navigation Properties
         [ForeignKey("SpeciesId")]
         public Species Species { get; set; }
