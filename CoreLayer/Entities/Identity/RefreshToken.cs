@@ -26,7 +26,7 @@ namespace CoreLayer.Entities.Identity
 
 
         [MaxLength(50)]
-        public string CreatedByIp { get; set; }
+        public string? CreatedByIp { get; set; }
 
         // Navigation Properties
         [ForeignKey("UserId")]

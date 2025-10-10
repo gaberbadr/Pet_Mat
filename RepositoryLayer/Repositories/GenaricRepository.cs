@@ -83,7 +83,6 @@ public class GenaricRepository<TEntity, TKey> : IGenaricRepository<TEntity, TKey
     {
         await _dbContext.Set<TEntity>().AddRangeAsync(entities);
     }
-
     private IQueryable<TEntity> ApplySpecfications(ISpecifications<TEntity, TKey> spec)
     {
         return SpecificationsEvaluator<TEntity, TKey>.GetQuery(_dbContext.Set<TEntity>(), spec);
