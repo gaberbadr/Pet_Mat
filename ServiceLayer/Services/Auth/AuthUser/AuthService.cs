@@ -293,6 +293,7 @@ namespace ServiceLayer.Services.Auth.AuthUser
 
             tokenEntry.RevokedAt = DateTime.UtcNow;
             refreshTokenRepo.Update(tokenEntry);
+            await _unitOfWork.CompleteAsync();
 
             var (accessToken, accessExp) = await _jwtService.GenerateAccessTokenAsync(user, _userManager);
             var (newRefreshToken, refreshExp) = _jwtService.GenerateRefreshToken();
