@@ -154,6 +154,23 @@ namespace petmat.Controllers
             }
         }
 
+        /// Get animal listing by ID
+        [ProducesResponseType(typeof(AnimalListingResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpGet("listing/{id}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<AnimalListingResponseDto>> GetListingById(int id)
+        {
+            try
+            {
+                var result = await _userService.GetListingByIdAsync(id);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+        }
 
         /// Get all animal listings owned by current user
         [ProducesResponseType(typeof(AnimalListingListDto), StatusCodes.Status200OK)]

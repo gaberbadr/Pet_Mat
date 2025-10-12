@@ -53,7 +53,7 @@ namespace CoreLayer.Specifications.User
         private static Expression<Func<AnimalListing, bool>> BuildCriteria(AnimalListingFilterParams filterParams)
         {
             return al =>
-                al.Status == "Active" &&
+                al.Status == "Active" && al.IsActive==true &&
                 (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
                 (string.IsNullOrEmpty(filterParams.Type) || al.Type == filterParams.Type) &&
                 (string.IsNullOrEmpty(filterParams.Status) || al.Status == filterParams.Status) &&
@@ -77,7 +77,7 @@ namespace CoreLayer.Specifications.User
         private static Expression<Func<AnimalListing, bool>> BuildCriteria(AnimalListingFilterParams filterParams)
         {
             return al =>
-                al.Status == "Active" &&
+                al.Status == "Active" && al.IsActive == true &&
                 (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
                 (string.IsNullOrEmpty(filterParams.Type) || al.Type == filterParams.Type) &&
                 (string.IsNullOrEmpty(filterParams.Status) || al.Status == filterParams.Status) &&
@@ -90,11 +90,23 @@ namespace CoreLayer.Specifications.User
         }
     }
 
-
+    public class AnimalListingByIdSpecification : BaseSpecifications<AnimalListing, int>
+    {
+        public AnimalListingByIdSpecification(int id)
+            : base(al => al.Id == id && al.IsActive == true && al.Status == "Active")
+        {
+            Includes.Add(al => al.Animal);
+            Includes.Add(al => al.Animal.Species);
+            Includes.Add(al => al.Animal.SubSpecies);
+            Includes.Add(al => al.Animal.Color);
+            Includes.Add(al => al.Owner);
+            Includes.Add(al => al.Owner.Address);
+        }
+    }
     public class AnimalListingWithDetailsByOwnerSpecification : BaseSpecifications<AnimalListing, int>
     {
         public AnimalListingWithDetailsByOwnerSpecification(string ownerId)
-            : base(al => al.OwnerId == ownerId)
+            : base(al => al.OwnerId == ownerId && al.IsActive == true)
         {
             Includes.Add(al => al.Animal);
             Includes.Add(al => al.Animal.Species);

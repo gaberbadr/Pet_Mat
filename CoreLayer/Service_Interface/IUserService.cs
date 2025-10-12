@@ -29,7 +29,7 @@ namespace CoreLayer.Service_Interface
         Task<PaginationResponse<AnimalListingResponseDto>> GetAllListingsAsync(
             AnimalListingFilterParams filterParams);
 
-
+        Task<AnimalListingResponseDto> GetListingByIdAsync(int id);
         Task<AnimalListingListDto> GetMyListingsAsync(string userId);
 
 

@@ -233,7 +233,19 @@ namespace ServiceLayer.Services.User
                 listingDtos
             );
         }
+       
+        public async Task<AnimalListingResponseDto> GetListingByIdAsync(int id)
+        {
+            var spec = new AnimalListingByIdSpecification(id);
+            var listing = await _unitOfWork.Repository<AnimalListing, int>()
+                .GetWithSpecficationAsync(spec);
 
+            if (listing == null)
+                throw new KeyNotFoundException("Listing not found or inactive");
+
+            return _mapper.Map<AnimalListingResponseDto>(listing);
+        }
+       
         public async Task<AnimalListingListDto> GetMyListingsAsync(string userId)
         {
             var spec = new AnimalListingWithDetailsByOwnerSpecification(userId);
@@ -246,7 +258,7 @@ namespace ServiceLayer.Services.User
                 Data = listingDtos
             };
         }
-
+       
         public async Task<ListingOperationResponseDto> AddAnimalListingAsync(AddAnimalListingDto dto, string userId)
         {
             // Validate animal exists and is active
@@ -254,8 +266,9 @@ namespace ServiceLayer.Services.User
             if (animal == null || animal.IsActive == false)
                 throw new KeyNotFoundException("Animal not found or inactive");
 
+            // Verify animal belongs to the user
             if (animal.OwnerId != userId)
-                throw new UnauthorizedAccessException("You don't have permission to list this animal");
+                throw new UnauthorizedAccessException("You can only create listings for your own animals");
 
             var listing = new AnimalListing
             {
@@ -267,6 +280,7 @@ namespace ServiceLayer.Services.User
                 OwnerId = userId,
                 ExtraPropertiesJson = dto.ExtraPropertiesJson,
                 Status = "Active",
+                IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -280,7 +294,7 @@ namespace ServiceLayer.Services.User
                 ListingId = listing.Id
             };
         }
-
+        
         public async Task<ListingOperationResponseDto> DeleteAnimalListingAsync(int id, string userId)
         {
             var listing = await _unitOfWork.Repository<AnimalListing, int>().GetAsync(id);
@@ -290,9 +304,11 @@ namespace ServiceLayer.Services.User
             if (listing.OwnerId != userId)
                 throw new UnauthorizedAccessException("You don't have permission to delete this listing");
 
-            //Hard delete (actual removal)
-            _unitOfWork.Repository<AnimalListing, int>().Delete(listing);
+            // Soft delete
+            listing.IsActive = false;
+            _unitOfWork.Repository<AnimalListing, int>().Update(listing);
             await _unitOfWork.CompleteAsync();
+
 
             return new ListingOperationResponseDto
             {

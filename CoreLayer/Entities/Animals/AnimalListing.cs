@@ -29,7 +29,7 @@ namespace CoreLayer.Entities.Animals
 
         public int AnimalId { get; set; }
 
-
+        public bool IsActive { get; set; } = true;
         public string OwnerId { get; set; }
 
         public string? ExtraPropertiesJson { get; set; }
