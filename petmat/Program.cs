@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using CoreLayer;
 using CoreLayer.AutoMapper.AnimalMapping;
+using CoreLayer.AutoMapper.DoctorMapping;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Helper.EmailSend;
 using CoreLayer.Service_Interface;
@@ -24,6 +25,7 @@ using ServiceLayer.Services.Admin;
 using ServiceLayer.Services.Auth.AuthUser;
 using ServiceLayer.Services.Auth.Jwt;
 using ServiceLayer.Services.Auth.LoginRateLimiter;
+using ServiceLayer.Services.Doctor;
 using ServiceLayer.Services.User;
 
 namespace petmat
@@ -49,7 +51,7 @@ namespace petmat
                 options.UseSqlServer(connectionString));
 
             //auto mapper
-            builder.Services.AddAutoMapper(typeof(Program), typeof(AdminMappingProfile), typeof(UserMappingProfile));
+            builder.Services.AddAutoMapper(typeof(Program), typeof(AdminMappingProfile), typeof(UserMappingProfile), typeof(DoctorMappingProfile));
 
 
             // Configure Identity
@@ -74,6 +76,7 @@ namespace petmat
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IAdminService, AdminService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IDoctorService, DoctorService>();
 
             // JWT Configuration
             var jwtKey = builder.Configuration["JWT:Key"] ?? "DefaultKeyForDevelopmentOnlyNotForProduction123";

@@ -16,8 +16,6 @@ namespace CoreLayer.Entities.Identity
         [MaxLength(100)]
         public string Government { get; set; }
 
-        [MaxLength(100)]
-        public string Country { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

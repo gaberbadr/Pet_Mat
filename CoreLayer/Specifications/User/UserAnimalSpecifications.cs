@@ -53,16 +53,22 @@ namespace CoreLayer.Specifications.User
         private static Expression<Func<AnimalListing, bool>> BuildCriteria(AnimalListingFilterParams filterParams)
         {
             return al =>
-                al.Status == "Active" && al.IsActive==true &&
-                (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
-                (string.IsNullOrEmpty(filterParams.Type) || al.Type == filterParams.Type) &&
-                (string.IsNullOrEmpty(filterParams.Status) || al.Status == filterParams.Status) &&
-                (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
-                (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
-                (string.IsNullOrEmpty(filterParams.Search) ||
-                    al.Title.ToLower().Contains(filterParams.Search.ToLower()) ||
-                    al.Description.ToLower().Contains(filterParams.Search.ToLower()) ||
-                    al.Animal.PetName.ToLower().Contains(filterParams.Search.ToLower()));
+       al.Status == "Active" && al.IsActive == true &&
+       (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
+       (string.IsNullOrEmpty(filterParams.Type) || al.Type == filterParams.Type) &&
+       (string.IsNullOrEmpty(filterParams.Status) || al.Status == filterParams.Status) &&
+       (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
+       (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
+
+       // City and Government
+       (string.IsNullOrEmpty(filterParams.City) || al.Owner.Address.City.ToLower() == filterParams.City.ToLower()) &&
+       (string.IsNullOrEmpty(filterParams.Government) || al.Owner.Address.Government.ToLower() == filterParams.Government.ToLower()) &&
+
+       // Search filter
+       (string.IsNullOrEmpty(filterParams.Search) ||
+           al.Title.ToLower().Contains(filterParams.Search.ToLower()) ||
+           al.Description.ToLower().Contains(filterParams.Search.ToLower()) ||
+           al.Animal.PetName.ToLower().Contains(filterParams.Search.ToLower()));
         }
     }
 
@@ -76,17 +82,24 @@ namespace CoreLayer.Specifications.User
 
         private static Expression<Func<AnimalListing, bool>> BuildCriteria(AnimalListingFilterParams filterParams)
         {
+
             return al =>
-                al.Status == "Active" && al.IsActive == true &&
-                (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
-                (string.IsNullOrEmpty(filterParams.Type) || al.Type == filterParams.Type) &&
-                (string.IsNullOrEmpty(filterParams.Status) || al.Status == filterParams.Status) &&
-                (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
-                (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
-                (string.IsNullOrEmpty(filterParams.Search) ||
-                    al.Title.ToLower().Contains(filterParams.Search.ToLower()) ||
-                    al.Description.ToLower().Contains(filterParams.Search.ToLower()) ||
-                    al.Animal.PetName.ToLower().Contains(filterParams.Search.ToLower()));
+                 al.Status == "Active" && al.IsActive == true &&
+                 (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
+                 (string.IsNullOrEmpty(filterParams.Type) || al.Type == filterParams.Type) &&
+                 (string.IsNullOrEmpty(filterParams.Status) || al.Status == filterParams.Status) &&
+                 (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
+                 (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
+
+                 // City and Government filters
+                 (string.IsNullOrEmpty(filterParams.City) || al.Owner.Address.City.ToLower() == filterParams.City.ToLower()) &&
+                 (string.IsNullOrEmpty(filterParams.Government) || al.Owner.Address.Government.ToLower() == filterParams.Government.ToLower()) &&
+
+                 // Search filter
+                 (string.IsNullOrEmpty(filterParams.Search) ||
+                     al.Title.ToLower().Contains(filterParams.Search.ToLower()) ||
+                     al.Description.ToLower().Contains(filterParams.Search.ToLower()) ||
+                     al.Animal.PetName.ToLower().Contains(filterParams.Search.ToLower()));
         }
     }
 

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace RepositoryLayer.Migrations
 {
     /// <inheritdoc />
-    public partial class firstMigration : Migration
+    public partial class firstmigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,7 +19,6 @@ namespace RepositoryLayer.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     City = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Government = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Country = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -445,8 +444,7 @@ namespace RepositoryLayer.Migrations
                 name: "DoctorApplications",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Specialization = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     ExperienceYears = table.Column<int>(type: "int", nullable: false),
@@ -458,7 +456,6 @@ namespace RepositoryLayer.Migrations
                     MedicalLicense = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     AppliedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    AdminNotes = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RejectionReason = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -476,22 +473,21 @@ namespace RepositoryLayer.Migrations
                 name: "DoctorProfiles",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Latitude = table.Column<double>(type: "float", nullable: false),
-                    Longitude = table.Column<double>(type: "float", nullable: false),
+                    Latitude = table.Column<double>(type: "float", nullable: true),
+                    Longitude = table.Column<double>(type: "float", nullable: true),
                     Specialization = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     ExperienceYears = table.Column<int>(type: "int", nullable: false),
                     ClinicAddress = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    ClinicName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Bio = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    WorkingHours = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    ClinicName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Bio = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    WorkingHours = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     IsAvailableForConsultation = table.Column<bool>(type: "bit", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    Services = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Languages = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Services = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Languages = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     AverageRating = table.Column<double>(type: "float", nullable: false),
                     TotalRatings = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
@@ -546,8 +542,7 @@ namespace RepositoryLayer.Migrations
                 name: "PharmacyApplications",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     PharmacyName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Address = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
@@ -579,8 +574,7 @@ namespace RepositoryLayer.Migrations
                 name: "PharmacyProfiles",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Latitude = table.Column<double>(type: "float", nullable: false),
                     Longitude = table.Column<double>(type: "float", nullable: false),
@@ -647,7 +641,7 @@ namespace RepositoryLayer.Migrations
                     ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     RevokedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedByIp = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
+                    CreatedByIp = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -856,9 +850,8 @@ namespace RepositoryLayer.Migrations
                     KnowledgeRating = table.Column<int>(type: "int", nullable: false),
                     ResponsivenessRating = table.Column<int>(type: "int", nullable: false),
                     ProfessionalismRating = table.Column<int>(type: "int", nullable: false),
-                    IsVerifiedExperience = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DoctorProfileId = table.Column<int>(type: "int", nullable: true)
+                    DoctorProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -898,7 +891,7 @@ namespace RepositoryLayer.Migrations
                     SpeciesId = table.Column<int>(type: "int", nullable: true),
                     Category = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    PharmacyProfileId = table.Column<int>(type: "int", nullable: true)
+                    PharmacyProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -936,9 +929,8 @@ namespace RepositoryLayer.Migrations
                     ProductAvailabilityRating = table.Column<int>(type: "int", nullable: false),
                     PricingRating = table.Column<int>(type: "int", nullable: false),
                     LocationRating = table.Column<int>(type: "int", nullable: false),
-                    IsVerifiedExperience = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    PharmacyProfileId = table.Column<int>(type: "int", nullable: true)
+                    PharmacyProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1037,6 +1029,7 @@ namespace RepositoryLayer.Migrations
                     Type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     AnimalId = table.Column<int>(type: "int", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
                     OwnerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ExtraPropertiesJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)

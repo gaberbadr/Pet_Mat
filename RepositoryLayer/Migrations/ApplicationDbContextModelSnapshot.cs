@@ -490,15 +490,9 @@ namespace RepositoryLayer.Migrations
 
             modelBuilder.Entity("CoreLayer.Entities.Doctors.DoctorApply", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AdminNotes")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("AppliedAt")
                         .HasColumnType("datetime2");
@@ -566,17 +560,14 @@ namespace RepositoryLayer.Migrations
 
             modelBuilder.Entity("CoreLayer.Entities.Doctors.DoctorProfile", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<double>("AverageRating")
                         .HasColumnType("float");
 
                     b.Property<string>("Bio")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ClinicAddress")
@@ -585,7 +576,6 @@ namespace RepositoryLayer.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("ClinicName")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -602,22 +592,19 @@ namespace RepositoryLayer.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Languages")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("Latitude")
+                    b.Property<double?>("Latitude")
                         .HasColumnType("float");
 
-                    b.Property<double>("Longitude")
+                    b.Property<double?>("Longitude")
                         .HasColumnType("float");
 
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Services")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Specialization")
@@ -633,7 +620,6 @@ namespace RepositoryLayer.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("WorkingHours")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -668,11 +654,8 @@ namespace RepositoryLayer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("DoctorProfileId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsVerifiedExperience")
-                        .HasColumnType("bit");
+                    b.Property<Guid?>("DoctorProfileId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("KnowledgeRating")
                         .HasColumnType("int");
@@ -847,11 +830,6 @@ namespace RepositoryLayer.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("City")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Country")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -1405,11 +1383,9 @@ namespace RepositoryLayer.Migrations
 
             modelBuilder.Entity("CoreLayer.Entities.Pharmacies.PharmacyApply", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Address")
                         .IsRequired()
@@ -1520,8 +1496,8 @@ namespace RepositoryLayer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("PharmacyProfileId")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("PharmacyProfileId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -1554,11 +1530,9 @@ namespace RepositoryLayer.Migrations
 
             modelBuilder.Entity("CoreLayer.Entities.Pharmacies.PharmacyProfile", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Address")
                         .IsRequired()
@@ -1632,9 +1606,6 @@ namespace RepositoryLayer.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsVerifiedExperience")
-                        .HasColumnType("bit");
-
                     b.Property<int>("LocationRating")
                         .HasColumnType("int");
 
@@ -1642,8 +1613,8 @@ namespace RepositoryLayer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("PharmacyProfileId")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("PharmacyProfileId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("PricingRating")
                         .HasColumnType("int");

@@ -9,15 +9,15 @@ using CoreLayer.Entities.Identity;
 
 namespace CoreLayer.Entities.Doctors
 {
-    public class DoctorProfile : BaseEntity<int>
+    public class DoctorProfile : BaseEntity<Guid>
     {
 
         [Required]
         public string UserId { get; set; }
 
-        public double Latitude { get; set; }
+        public double? Latitude { get; set; }
 
-        public double Longitude { get; set; }
+        public double? Longitude { get; set; }
 
         [MaxLength(200)]
         public string Specialization { get; set; }
@@ -28,22 +28,22 @@ namespace CoreLayer.Entities.Doctors
         public string ClinicAddress { get; set; }
 
         [MaxLength(200)]
-        public string ClinicName { get; set; }
+        public string? ClinicName { get; set; }
 
-        public string Bio { get; set; }
+        public string? Bio { get; set; }
 
-        public string WorkingHours { get; set; }
+        public string? WorkingHours { get; set; }
 
         [MaxLength(20)]
-        public string Phone { get; set; }
+        public string? Phone { get; set; }
 
         public bool IsAvailableForConsultation { get; set; } = true;
 
         public bool IsActive { get; set; } = true;
 
-        public string Services { get; set; }
+        public string? Services { get; set; }
 
-        public string Languages { get; set; }
+        public string? Languages { get; set; }
 
         public double AverageRating { get; set; }
 

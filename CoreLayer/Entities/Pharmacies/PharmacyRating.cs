@@ -35,7 +35,6 @@ namespace CoreLayer.Entities.Pharmacies
         [Range(1, 5)]
         public int LocationRating { get; set; }
 
-        public bool IsVerifiedExperience { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -35,7 +35,6 @@ namespace RepositoryLayer.Data.Data_seeding
                 {
                     City = "System",
                     Government = "System",
-                    Country = "System" 
                 };
 
                 await unitOfWork.Repository<Address, int>().AddAsync(newAddress);

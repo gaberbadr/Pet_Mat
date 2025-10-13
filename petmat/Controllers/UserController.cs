@@ -3,6 +3,7 @@ using System.Security.Claims;
 using AutoMapper;
 using CoreLayer;
 using CoreLayer.Dtos;
+using CoreLayer.Dtos.Doctor;
 using CoreLayer.Dtos.User;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
@@ -283,6 +284,155 @@ namespace petmat.Controllers
         {
             var result = await _userService.GetAllColorsAsync();
             return Ok(result);
+        }
+
+        // Add these endpoints to the existing UserController class
+
+        // ==================== DOCTOR APPLICATION (USER) ====================
+
+
+        /// Apply to become a doctor
+        [ProducesResponseType(typeof(DoctorApplicationOperationResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status403Forbidden)]
+        [HttpPost("apply-doctor")]
+        public async Task<ActionResult<DoctorApplicationOperationResponseDto>> ApplyToBeDoctor([FromForm] ApplyDoctorDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var userId = GetUserId();
+                var result = await _userService.ApplyToBeDoctorAsync(dto, userId);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(403, new ApiErrorResponse(403, ex.Message));
+            }
+        }
+
+
+        /// Get current user's doctor application status
+        [ProducesResponseType(typeof(UserDoctorApplicationStatusDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpGet("doctor-application-status")]
+        public async Task<ActionResult<UserDoctorApplicationStatusDto>> GetDoctorApplicationStatus()
+        {
+            try
+            {
+                var userId = GetUserId();
+                var result = await _userService.GetDoctorApplicationStatusAsync(userId);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(403, new ApiErrorResponse(403, ex.Message));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+        }
+
+        // ==================== DOCTOR RATING (USER) ====================
+
+
+        /// Get all doctors 
+        [ProducesResponseType(typeof(PaginationResponse<PublicDoctorProfileDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [HttpGet("doctors")]
+        [AllowAnonymous]
+        public async Task<ActionResult<PaginationResponse<PublicDoctorProfileDto>>> GetDoctors([FromQuery] DoctorFilterParams filterParams)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var result = await _userService.GetDoctorsAsync(filterParams);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+
+        /// Rate a doctor
+        [ProducesResponseType(typeof(RatingOperationResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpPost("rate-doctor/{doctorId}")]
+        public async Task<ActionResult<RatingOperationResponseDto>> RateDoctor(string doctorId, [FromBody] RateDoctorDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var userId = GetUserId();
+                var result = await _userService.RateDoctorAsync(doctorId, dto, userId);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+
+        /// Update existing doctor rating
+        [ProducesResponseType(typeof(RatingOperationResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpPut("rate-doctor/{doctorId}")]
+        public async Task<ActionResult<RatingOperationResponseDto>> UpdateDoctorRating(string doctorId, [FromBody] RateDoctorDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var userId = GetUserId();
+                var result = await _userService.UpdateDoctorRatingAsync(doctorId, dto, userId);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new ApiErrorResponse(403, ex.Message));
+            }
+        }
+
+ 
+        /// Get doctor profile by ID (public endpoint)
+        [ProducesResponseType(typeof(PublicDoctorProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpGet("doctor/{doctorId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<PublicDoctorProfileDto>> GetDoctorProfile(string doctorId)
+        {
+            try
+            {
+                var result = await _userService.GetPublicDoctorProfileAsync(doctorId);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
         }
     }
 }

@@ -9,7 +9,7 @@ using CoreLayer.Entities.Identity;
 
 namespace CoreLayer.Entities.Pharmacies
 {
-    public class PharmacyApply : BaseEntity<int>
+    public class PharmacyApply : BaseEntity<Guid>
     {
 
         [Required]

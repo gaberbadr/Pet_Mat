@@ -1,54 +1,44 @@
-For Backend Developer (with code):
-```
-git clone <your-repo>
-cd <your-repo>
-# Add .env file
-docker-compose up -d
-```
+==> make sure you download : docker (make sure is docker open while this steps or work on API)
+1.  download the folder of this drive : https://drive.google.com/drive/folders/1yIxUOk5G3yVs2QEGN16hzFDZc5yK2CSM?usp=drive_link and extract it if is folder.zip
+2.  open CMD of this folder path.
+3.  run : docker compose -f docker-compose-production.yml up -d (wait until finish)
+-the API work on : http://localhost:5000
+-the API work on : http://localhost:5000/swagger/index.html
 
-For Frontend Developer (without code):
-```
-#1. database
-docker run -d --name petmat-sql -e "SA_PASSWORD=Your_passwordpetmat123" -e "ACCEPT_EULA=Y" -e "MSSQL_PID=Express" -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
 
-#2. Add .env file in folder
 
-#3. API ,open termenal cmd on env folder
-docker run -d -p 5000:8080 --env-file .env --name petmat-api gaberbadr1/petmat-api:latest
+//.env
 
-```
+# API Port
+API_PORT=5000
 
-.env(delete one of Database Configuration)
-```
-#1.Database Configuration (for backend)
-ConnectionStrings__DefaultConnection=Server=db;Database=yourDB;User Id=sa;Password=Your_passwordpetmat123;TrustServerCertificate=True;
+# Database Password
+DB_PASSWORD=Your_password
 
-#2.Database Configuration (for frontend)
-#ConnectionStrings__DefaultConnection=Server=host.docker.internal,1433;Database=yourDB;User Id=sa;Password=Your_passwordpetmat123;TrustServerCertificate=True;
+# Database Configuration
+ConnectionStrings__DefaultConnection=Server=db;Database=yourDataBase;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
 
 # JWT Configuration
-JWT__Key=ffgfsgegfgfgfgfgffggfggf
+JWT__Key=dfdfdfdfdfdfdfddfdfdfd
 JWT__Issuer=http://localhost:5000/
-JWT__Audience=test
+JWT__Audience=Test
 JWT__AccessTokenExpirationMinutes=15
 JWT__RefreshTokenExpirationDays=7
 
 # SMTP Configuration
 SMTP__Host=smtp.gmail.com
 SMTP__Port=587
-SMTP__Email=yourgamil@gmail.com
-SMTP__Password=
+SMTP__Email=Email@gmail.com
+SMTP__Password=pppppp
 
 # Google OAuth Configuration
-Authentication__Google__ClientId=
-Authentication__Google__ClientSecret=
+Authentication__Google__ClientId=gdfgfgfgf.com
+Authentication__Google__ClientSecret=Gfgfggf-fgfgfg
 
 # Application Configuration
 BaseURL=http://localhost:5000/
 Frontend__BaseUrl=http://127.0.0.1:5500
 ASPNETCORE_URLS=http://+:8080
-```
-
 
 
 ---------------------------------

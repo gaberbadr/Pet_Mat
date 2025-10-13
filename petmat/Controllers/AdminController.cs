@@ -2,6 +2,7 @@
 using CoreLayer;
 using CoreLayer.Dtos;
 using CoreLayer.Dtos.Admin;
+using CoreLayer.Dtos.Doctor;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Service_Interface;
@@ -204,6 +205,72 @@ namespace petmat.Controllers
             try
             {
                 var result = await _adminService.DeleteColorAsync(id);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+
+        // ==================== DOCTOR APPLICATION MANAGEMENT ====================
+
+        /// Get all pending doctor applications
+        [ProducesResponseType(typeof(DoctorApplicationListDto), StatusCodes.Status200OK)]
+        [HttpGet("doctor-applications/pending")]
+        public async Task<ActionResult<DoctorApplicationListDto>> GetPendingDoctorApplications()
+        {
+            var result = await _adminService.GetPendingDoctorApplicationsAsync();
+            return Ok(result);
+        }
+
+
+        /// Get all doctor applications with optional status filter
+        [ProducesResponseType(typeof(DoctorApplicationListDto), StatusCodes.Status200OK)]
+        [HttpGet("doctor-applications")]
+        public async Task<ActionResult<DoctorApplicationListDto>> GetAllDoctorApplications([FromQuery] string? status = null)
+        {
+            var result = await _adminService.GetAllDoctorApplicationsAsync(status);
+            return Ok(result);
+        }
+
+        /// Get doctor application by ID
+        [ProducesResponseType(typeof(DoctorApplicationDetailDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpGet("doctor-applications/{id}")]
+        public async Task<ActionResult<DoctorApplicationDetailDto>> GetDoctorApplicationById(Guid id)
+        {
+            try
+            {
+                var result = await _adminService.GetDoctorApplicationByIdAsync(id);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+        }
+
+
+        /// Review doctor application (Approve or Reject)
+        [ProducesResponseType(typeof(ApplicationReviewResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpPost("doctor-applications/{id}/review")]
+        public async Task<ActionResult<ApplicationReviewResponseDto>> ReviewDoctorApplication(
+        Guid id, [FromBody] ReviewDoctorApplicationDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var result = await _adminService.ReviewDoctorApplicationAsync(id, dto);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)

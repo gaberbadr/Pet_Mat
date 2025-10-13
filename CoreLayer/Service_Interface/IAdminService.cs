@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Dtos.Admin;
+using CoreLayer.Dtos.Doctor;
 
 namespace CoreLayer.Service_Interface
 {
@@ -24,5 +25,11 @@ namespace CoreLayer.Service_Interface
         // Color Management
         Task<ColorResponseDto> AddColorAsync(ColorAdminDto dto);
         Task<DeleteResponseDto> DeleteColorAsync(int id);
+
+        // Doctor Application Management
+        Task<DoctorApplicationListDto> GetPendingDoctorApplicationsAsync();
+        Task<DoctorApplicationListDto> GetAllDoctorApplicationsAsync(string? status = null);
+        Task<DoctorApplicationDetailDto> GetDoctorApplicationByIdAsync(Guid id);
+        Task<ApplicationReviewResponseDto> ReviewDoctorApplicationAsync(Guid id, ReviewDoctorApplicationDto dto);
     }
 }

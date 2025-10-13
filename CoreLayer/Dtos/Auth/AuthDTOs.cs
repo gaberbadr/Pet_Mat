@@ -8,6 +8,38 @@ using Microsoft.AspNetCore.Http;
 
 namespace CoreLayer.Dtos.Auth
 {
+
+    public class PublicUserProfileDto
+    {
+        public string Id { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string FullName => $"{FirstName} {LastName}".Trim();
+        public string ProfilePhotoUrl { get; set; }
+        public string City { get; set; }
+        public string Government { get; set; }
+        public DateTime CreatedAt { get; set; }
+
+        // Role information
+        public bool IsDoctor { get; set; }
+        public bool IsPharmacy { get; set; }
+
+        // Doctor-specific info (if applicable)
+        public string Specialization { get; set; }
+        public int? ExperienceYears { get; set; }
+        public double? DoctorAverageRating { get; set; }
+        public int? DoctorTotalRatings { get; set; }
+
+        // Pharmacy-specific info (if applicable)
+        public string PharmacyName { get; set; }
+        public double? PharmacyAverageRating { get; set; }
+        public int? PharmacyTotalRatings { get; set; }
+
+        // Activity stats
+        public int TotalAnimals { get; set; }
+        public int TotalListings { get; set; }
+        public int TotalPosts { get; set; }
+    }
     public class EmailDto
     {
         [Required(ErrorMessage = "Email is required")]
@@ -85,6 +117,8 @@ namespace CoreLayer.Dtos.Auth
 
     public class AddressDto
     {
+        public int Id { get; set; }
+
         [Required(ErrorMessage = "City is required")]
         [MaxLength(100, ErrorMessage = "City cannot exceed 100 characters")]
         public string City { get; set; }
@@ -92,10 +126,6 @@ namespace CoreLayer.Dtos.Auth
         [Required(ErrorMessage = "Government is required")]
         [MaxLength(100, ErrorMessage = "Government cannot exceed 100 characters")]
         public string Government { get; set; }
-
-        [Required(ErrorMessage = "Country is required")]
-        [MaxLength(100, ErrorMessage = "Country cannot exceed 100 characters")]
-        public string Country { get; set; }
     }
 
     public class RefreshRequestDto
@@ -122,9 +152,10 @@ namespace CoreLayer.Dtos.Auth
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string PhoneNumber { get; set; }
-        public int? AddressId { get; set; }
         public List<string> Roles { get; set; }
         public bool HasPassword { get; set; }
         public string ProfilePhotoUrl { get; set; }
+
+        public AddressDto? Address { get; set; }
     }
 }

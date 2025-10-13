@@ -9,7 +9,7 @@ using CoreLayer.Entities.Identity;
 
 namespace CoreLayer.Entities.Doctors
 {
-    public class DoctorApply : BaseEntity<int>
+    public class DoctorApply : BaseEntity<Guid>
     {
 
         [Required]
@@ -42,8 +42,6 @@ namespace CoreLayer.Entities.Doctors
         public string Status { get; set; } = "Pending";
 
         public DateTime AppliedAt { get; set; } = DateTime.UtcNow;
-
-        public string AdminNotes { get; set; }
 
         public string RejectionReason { get; set; }
 

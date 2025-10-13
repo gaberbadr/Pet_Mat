@@ -20,6 +20,8 @@ namespace CoreLayer.Service_Interface
         Task<(bool Success, string Message)> UpdatePhoneAsync(string userId, string phoneNumber);
         Task<(bool Success, string Message, string? PictureUrl)> UpdateProfilePictureAsync(string userId, IFormFile picture, string baseUrl);
         Task<(bool Success, string Message)> CreateOrUpdateAddressAsync(string userId, AddressDto dto);
+        Task<(bool Success, string Message, PublicUserProfileDto? Profile)> GetPublicUserProfileAsync(
+         string userId, string baseUrl);
         Task<(bool Success, string Message, UserProfileDto? Profile)> GetUserProfileAsync(string userId, string baseUrl);
         Task<(bool Success, string Message, TokenResponseDto? Token)> RefreshTokenAsync(string refreshToken, string? ipAddress);
         Task<(bool Success, string Message)> RevokeTokenAsync(string refreshToken);

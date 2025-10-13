@@ -6,11 +6,16 @@ using System.Text;
 using System.Threading.Tasks;
 using CoreLayer;
 using CoreLayer.Dtos.Auth;
+using CoreLayer.Entities.Animals;
+using CoreLayer.Entities.Community;
+using CoreLayer.Entities.Doctors;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Entities.Pharmacies;
 using CoreLayer.Helper.Documents;
 using CoreLayer.Service_Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+
 
 namespace ServiceLayer.Services.Auth.AuthUser
 {
@@ -226,7 +231,6 @@ namespace ServiceLayer.Services.Auth.AuthUser
                 {
                     address.City = dto.City;
                     address.Government = dto.Government;
-                    address.Country = dto.Country;
                     addressRepo.Update(address);
                 }
             }
@@ -236,7 +240,6 @@ namespace ServiceLayer.Services.Auth.AuthUser
                 {
                     City = dto.City,
                     Government = dto.Government,
-                    Country = dto.Country
                 };
                 await addressRepo.AddAsync(address);
                 await _unitOfWork.CompleteAsync();
@@ -250,13 +253,31 @@ namespace ServiceLayer.Services.Auth.AuthUser
         }
 
         public async Task<(bool Success, string Message, UserProfileDto? Profile)> GetUserProfileAsync(
-            string userId, string baseUrl)
+     string userId, string baseUrl)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return (false, "User not found", null);
 
             var roles = await _userManager.GetRolesAsync(user);
+
+            AddressDto? addressDto = null;
+
+            if (user.AddressId.HasValue)
+            {
+                var addressRepo = _unitOfWork.Repository<Address, int>();
+                var address = await addressRepo.GetAsync(user.AddressId.Value);
+
+                if (address != null)
+                {
+                    addressDto = new AddressDto
+                    {
+                        Id = address.Id,
+                        City = address.City,
+                        Government = address.Government
+                    };
+                }
+            }
 
             var profile = new UserProfileDto
             {
@@ -266,13 +287,99 @@ namespace ServiceLayer.Services.Auth.AuthUser
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 PhoneNumber = user.PhoneNumber,
-                AddressId = user.AddressId,
                 Roles = roles.ToList(),
                 HasPassword = user.HasPasswordAsync,
                 ProfilePhotoUrl = !string.IsNullOrEmpty(user.ProfilePicture)
                     ? DocumentSetting.GetFileUrl(user.ProfilePicture, "profiles", baseUrl)
-                    : null
+                    : null,
+                Address = addressDto
             };
+
+            return (true, "Profile retrieved successfully", profile);
+        }
+
+
+        public async Task<(bool Success, string Message, PublicUserProfileDto? Profile)> GetPublicUserProfileAsync(
+            string userId, string baseUrl)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || !user.IsActive)
+                return (false, "User not found", null);
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var isDoctor = roles.Contains("Doctor");
+            var isPharmacy = roles.Contains("Pharmacy");
+
+            // Get address info
+            AddressDto? addressDto = null;
+            if (user.AddressId.HasValue)
+            {
+                var addressRepo = _unitOfWork.Repository<Address, int>();
+                var address = await addressRepo.GetAsync(user.AddressId.Value);
+                if (address != null)
+                {
+                    addressDto = new AddressDto
+                    {
+                        City = address.City,
+                        Government = address.Government
+                    };
+                }
+            }
+
+            var profile = new PublicUserProfileDto
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                ProfilePhotoUrl = !string.IsNullOrEmpty(user.ProfilePicture)
+                    ? DocumentSetting.GetFileUrl(user.ProfilePicture, "profiles", baseUrl)
+                    : null,
+                City = addressDto?.City,
+                Government = addressDto?.Government,
+                CreatedAt = user.CreatedAt,
+                IsDoctor = isDoctor,
+                IsPharmacy = isPharmacy
+            };
+
+            // Get doctor-specific info if applicable
+            if (isDoctor)
+            {
+                var doctorProfileRepo = _unitOfWork.Repository<DoctorProfile, Guid>();
+                var doctorProfile = (await doctorProfileRepo.FindAsync(dp => dp.UserId == userId && dp.IsActive))
+                    .FirstOrDefault();
+
+                if (doctorProfile != null)
+                {
+                    profile.Specialization = doctorProfile.Specialization;
+                    profile.ExperienceYears = doctorProfile.ExperienceYears;
+                    profile.DoctorAverageRating = doctorProfile.AverageRating;
+                    profile.DoctorTotalRatings = doctorProfile.TotalRatings;
+                }
+            }
+
+            // Get pharmacy-specific info if applicable
+            if (isPharmacy)
+            {
+                var pharmacyProfileRepo = _unitOfWork.Repository<PharmacyProfile, Guid>();
+                var pharmacyProfile = (await pharmacyProfileRepo.FindAsync(pp => pp.UserId == userId && pp.IsActive))
+                    .FirstOrDefault();
+
+                if (pharmacyProfile != null)
+                {
+                    profile.PharmacyName = pharmacyProfile.PharmacyName;
+                    profile.PharmacyAverageRating = pharmacyProfile.AverageRating;
+                    profile.PharmacyTotalRatings = pharmacyProfile.TotalRatings;
+                }
+            }
+
+            // Get activity stats
+            var animalRepo = _unitOfWork.Repository<Animal, int>();
+            var listingRepo = _unitOfWork.Repository<AnimalListing, int>();
+            var postRepo = _unitOfWork.Repository<Post, int>();
+
+            profile.TotalAnimals = (await animalRepo.FindAsync(a => a.OwnerId == userId && a.IsActive)).Count();
+            profile.TotalListings = (await listingRepo.FindAsync(al => al.OwnerId == userId && al.IsActive)).Count();
+            profile.TotalPosts = (await postRepo.FindAsync(p => p.UserId == userId && p.IsActive)).Count();
 
             return (true, "Profile retrieved successfully", profile);
         }

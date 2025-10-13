@@ -276,6 +276,24 @@ namespace petmat.Controllers
             return Ok(profile);
         }
 
+
+        // ========== another user ==========
+
+        [ProducesResponseType(typeof(PublicUserProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpGet("user/{userId}")]
+        [AllowAnonymous] 
+        public async Task<IActionResult> GetUserProfileById(string userId)
+        {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var (success, message, profile) = await _authService.GetPublicUserProfileAsync(userId, baseUrl);
+
+            if (!success)
+                return NotFound(new ApiErrorResponse(404, message));
+
+            return Ok(profile);
+        }
+
         // ========== Refresh Token ==========
         [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]

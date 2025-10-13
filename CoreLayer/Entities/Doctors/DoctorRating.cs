@@ -35,7 +35,6 @@ namespace CoreLayer.Entities.Doctors
         [Range(1, 5)]
         public int ProfessionalismRating { get; set; }
 
-        public bool IsVerifiedExperience { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
