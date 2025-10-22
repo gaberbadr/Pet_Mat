@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Dtos.Doctor;
 
-namespace CoreLayer.Service_Interface
+namespace CoreLayer.Service_Interface.Doctor
 {
     public interface IDoctorService
     {

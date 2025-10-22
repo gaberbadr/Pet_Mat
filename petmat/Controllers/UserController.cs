@@ -4,12 +4,13 @@ using AutoMapper;
 using CoreLayer;
 using CoreLayer.Dtos;
 using CoreLayer.Dtos.Doctor;
+using CoreLayer.Dtos.Pharmacy;
 using CoreLayer.Dtos.User;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Helper.Documents;
 using CoreLayer.Helper.Pagination;
-using CoreLayer.Service_Interface;
+using CoreLayer.Service_Interface.User;
 using CoreLayer.Specifications.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,16 +21,19 @@ using petmat.Errors;
 
 namespace petmat.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    public class UserController : ControllerBase
-    {
-        private readonly IUserService _userService;
 
-        public UserController(IUserService userService)
+    [Authorize]
+    public class UserController : BaseApiController
+    {
+        private readonly IUserDoctorManagement _userDoctorManagement;
+        private readonly IUserAnimalManagement _userAnimalManagement;
+        private readonly IUserPharmacyManagement _userPharmacyManagement;
+
+        public UserController( IUserDoctorManagement userDoctorManagement, IUserAnimalManagement userAnimalManagement, IUserPharmacyManagement userPharmacyManagement)
         {
-            _userService = userService;
+            _userDoctorManagement = userDoctorManagement;
+            _userAnimalManagement = userAnimalManagement;
+            _userPharmacyManagement = userPharmacyManagement;
         }
 
         private string GetUserId() => User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -43,7 +47,7 @@ namespace petmat.Controllers
         public async Task<ActionResult<AnimalListDto>> GetMyAnimals()
         {
             var userId = GetUserId();
-            var result = await _userService.GetMyAnimalsAsync(userId);
+            var result = await _userAnimalManagement.GetMyAnimalsAsync(userId);
             return Ok(result);
         }
 
@@ -61,7 +65,7 @@ namespace petmat.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await _userService.AddAnimalAsync(dto, userId);
+                var result = await _userAnimalManagement.AddAnimalAsync(dto, userId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -89,7 +93,7 @@ namespace petmat.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await _userService.UpdateAnimalAsync(id, dto, userId);
+                var result = await _userAnimalManagement.UpdateAnimalAsync(id, dto, userId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -117,7 +121,7 @@ namespace petmat.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await _userService.DeleteAnimalAsync(id, userId);
+                var result = await _userAnimalManagement.DeleteAnimalAsync(id, userId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -142,7 +146,7 @@ namespace petmat.Controllers
         {
             try
             {
-                var result = await _userService.GetAllListingsAsync(filterParams);
+                var result = await _userAnimalManagement.GetAllListingsAsync(filterParams);
                 return Ok(result);
             }
             catch (ArgumentException ex)
@@ -164,7 +168,7 @@ namespace petmat.Controllers
         {
             try
             {
-                var result = await _userService.GetListingByIdAsync(id);
+                var result = await _userAnimalManagement.GetListingByIdAsync(id);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -179,7 +183,7 @@ namespace petmat.Controllers
         public async Task<ActionResult<AnimalListingListDto>> GetMyListings()
         {
             var userId = GetUserId();
-            var result = await _userService.GetMyListingsAsync(userId);
+            var result = await _userAnimalManagement.GetMyListingsAsync(userId);
             return Ok(result);
         }
 
@@ -198,7 +202,7 @@ namespace petmat.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await _userService.AddAnimalListingAsync(dto, userId);
+                var result = await _userAnimalManagement.AddAnimalListingAsync(dto, userId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -222,7 +226,7 @@ namespace petmat.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await _userService.DeleteAnimalListingAsync(id, userId);
+                var result = await _userAnimalManagement.DeleteAnimalListingAsync(id, userId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -244,7 +248,7 @@ namespace petmat.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<SpeciesListDto>> GetAllSpecies()
         {
-            var result = await _userService.GetAllSpeciesAsync();
+            var result = await _userAnimalManagement.GetAllSpeciesAsync();
             return Ok(result);
         }
 
@@ -254,7 +258,7 @@ namespace petmat.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<SubSpeciesListDto>> GetAllSubSpecies()
         {
-            var result = await _userService.GetAllSubSpeciesAsync();
+            var result = await _userAnimalManagement.GetAllSubSpeciesAsync();
             return Ok(result);
         }
 
@@ -267,7 +271,7 @@ namespace petmat.Controllers
         {
             try
             {
-                var result = await _userService.GetSubSpeciesBySpeciesIdAsync(speciesId);
+                var result = await _userAnimalManagement.GetSubSpeciesBySpeciesIdAsync(speciesId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -282,7 +286,7 @@ namespace petmat.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<ColorListDto>> GetAllColors()
         {
-            var result = await _userService.GetAllColorsAsync();
+            var result = await _userAnimalManagement.GetAllColorsAsync();
             return Ok(result);
         }
 
@@ -304,7 +308,7 @@ namespace petmat.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await _userService.ApplyToBeDoctorAsync(dto, userId);
+                var result = await _userDoctorManagement.ApplyToBeDoctorAsync(dto, userId);
                 return Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -324,7 +328,7 @@ namespace petmat.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await _userService.GetDoctorApplicationStatusAsync(userId);
+                var result = await _userDoctorManagement.GetDoctorApplicationStatusAsync(userId);
                 return Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -352,7 +356,7 @@ namespace petmat.Controllers
 
             try
             {
-                var result = await _userService.GetDoctorsAsync(filterParams);
+                var result = await _userDoctorManagement.GetDoctorsAsync(filterParams);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -375,7 +379,7 @@ namespace petmat.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await _userService.RateDoctorAsync(doctorId, dto, userId);
+                var result = await _userDoctorManagement.RateDoctorAsync(doctorId, dto, userId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -403,7 +407,7 @@ namespace petmat.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await _userService.UpdateDoctorRatingAsync(doctorId, dto, userId);
+                var result = await _userDoctorManagement.UpdateDoctorRatingAsync(doctorId, dto, userId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -426,7 +430,7 @@ namespace petmat.Controllers
         {
             try
             {
-                var result = await _userService.GetPublicDoctorProfileAsync(doctorId);
+                var result = await _userDoctorManagement.GetPublicDoctorProfileAsync(doctorId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -434,6 +438,203 @@ namespace petmat.Controllers
                 return NotFound(new ApiErrorResponse(404, ex.Message));
             }
         }
+
+
+        // ==================== BROWSE PHARMACIES ====================
+
+
+        /// Get all pharmacies with filters and pagination
+        [ProducesResponseType(typeof(PaginationResponse<PublicPharmacyProfileDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [HttpGet("pharmacies")]
+        public async Task<ActionResult<PaginationResponse<PublicPharmacyProfileDto>>> GetAllPharmacies([FromQuery] PharmacyFilterParams filterParams)
+        {
+            try
+            {
+                var result = await _userPharmacyManagement.GetPharmaciesAsync(filterParams);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+        /// Get pharmacy details by user ID (pharmacy owner ID)
+        [ProducesResponseType(typeof(PublicPharmacyProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpGet("pharmacies/{pharmacyId}")]
+        public async Task<ActionResult<PublicPharmacyProfileDto>> GetPharmacyById(string pharmacyId)
+        {
+            try
+            {
+                var result = await _userPharmacyManagement.GetPublicPharmacyProfileAsync(pharmacyId);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+        }
+
+        // ==================== BROWSE PHARMACY LISTINGS ====================
+
+        /// Get all pharmacy listings (products) with filters and pagination
+        [ProducesResponseType(typeof(PaginationResponse<PharmacyListingResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [HttpGet("pharmacy-listings")]
+        public async Task<ActionResult<PaginationResponse<PharmacyListingResponseDto>>> GetAllPharmacyListings([FromQuery] PharmacyListingFilterParams filterParams)
+        {
+            try
+            {
+                var result = await _userPharmacyManagement.GetAllPharmacyListingsAsync(filterParams);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+        /// Get pharmacy listing details by ID
+        [ProducesResponseType(typeof(PharmacyListingResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpGet("pharmacy-listings/{id}")]
+        public async Task<ActionResult<PharmacyListingResponseDto>> GetPharmacyListingById(int id)
+        {
+            try
+            {
+                var result = await _userPharmacyManagement.GetPharmacyListingByIdAsync(id);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+        }
+
+        /// Get all listings for a specific pharmacy
+        [ProducesResponseType(typeof(PaginationResponse<PharmacyListingResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [HttpGet("pharmacies/{pharmacyId}/listings")]
+        public async Task<ActionResult<PaginationResponse<PharmacyListingResponseDto>>> GetListingsByPharmacyId(
+            string pharmacyId, [FromQuery] PharmacyListingFilterParams filterParams)
+        {
+            try
+            {
+                var result = await _userPharmacyManagement.GetListingsByPharmacyIdAsync(pharmacyId, filterParams);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+        // ==================== PHARMACY APPLICATION (USER) ====================
+
+        /// Apply to become a pharmacy
+        [ProducesResponseType(typeof(PharmacyApplicationOperationResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [HttpPost("apply-pharmacy")]
+        public async Task<ActionResult<PharmacyApplicationOperationResponseDto>> ApplyToBePharmacy([FromForm] ApplyPharmacyDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var userId = GetUserId();
+                var result = await _userPharmacyManagement.ApplyToBePharmacyAsync(dto, userId);
+                return Created("", result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+        /// Get current user's pharmacy application status
+        [ProducesResponseType(typeof(UserPharmacyApplicationStatusDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpGet("pharmacy-application-status")]
+        public async Task<ActionResult<UserPharmacyApplicationStatusDto>> GetPharmacyApplicationStatus()
+        {
+            try
+            {
+                var userId = GetUserId();
+                var result = await _userPharmacyManagement.GetPharmacyApplicationStatusAsync(userId);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+        // ==================== RATINGS (USER) ====================
+
+        /// Rate a pharmacy
+        [ProducesResponseType(typeof(RatingOperationResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpPost("pharmacies/{pharmacyId}/rate")]
+        public async Task<ActionResult<RatingOperationResponseDto>> RatePharmacy(string pharmacyId, [FromBody] RatePharmacyDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var userId = GetUserId();
+                var result = await _userPharmacyManagement.RatePharmacyAsync(pharmacyId, dto, userId);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+        /// Update pharmacy rating
+        [ProducesResponseType(typeof(RatingOperationResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+        [HttpPut("pharmacies/{pharmacyId}/rate")]
+        public async Task<ActionResult<RatingOperationResponseDto>> UpdatePharmacyRating(string pharmacyId, [FromBody] RatePharmacyDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var userId = GetUserId();
+                var result = await _userPharmacyManagement.UpdatePharmacyRatingAsync(pharmacyId, dto, userId);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new ApiErrorResponse(401, ex.Message));
+            }
+        }
+
     }
 }
 

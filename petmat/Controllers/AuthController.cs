@@ -7,7 +7,7 @@ using CoreLayer.Dtos.Auth;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Helper.Documents;
 using CoreLayer.Helper.Pagination;
-using CoreLayer.Service_Interface;
+using CoreLayer.Service_Interface.IAuth;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -20,22 +20,24 @@ using RepositoryLayer.Data.Context;
 
 namespace petmat.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+
+    public class AuthController : BaseApiController
     {
         private readonly IAuthService _authService;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IConfiguration _cfg;
+        private readonly IAuthUserService _authUserService;
 
         public AuthController(
             IAuthService authService,
             SignInManager<ApplicationUser> signInManager,
-            IConfiguration cfg)
+            IConfiguration cfg,
+            IAuthUserService authUserService)
         {
             _authService = authService;
             _signInManager = signInManager;
             _cfg = cfg;
+            _authUserService = authUserService;
         }
 
         // ========== Send OTP Code ==========
@@ -90,7 +92,7 @@ namespace petmat.Controllers
                 return BadRequest(new ApiErrorResponse(400, "Invalid input"));
 
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-            var (success, message, token, banMinutes) = await _authService.LoginAsync(dto.Email, dto.Password, ipAddress);
+            var (success, message, token, banMinutes) = await _authUserService.LoginAsync(dto.Email, dto.Password, ipAddress);
 
             if (!success)
             {
@@ -114,7 +116,7 @@ namespace petmat.Controllers
         public async Task<IActionResult> CreatePassword([FromBody] CreatePasswordDto dto)
         {
             var userId = User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var (success, message) = await _authService.CreatePasswordAsync(userId, dto.Password);
+            var (success, message) = await _authUserService.CreatePasswordAsync(userId, dto.Password);
 
             if (!success)
                 return message.Contains("not found")
@@ -133,7 +135,7 @@ namespace petmat.Controllers
         public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordDto dto)
         {
             var userId = User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var (success, message) = await _authService.UpdatePasswordAsync(userId, dto.OldPassword, dto.NewPassword);
+            var (success, message) = await _authUserService.UpdatePasswordAsync(userId, dto.OldPassword, dto.NewPassword);
 
             if (!success)
                 return message.Contains("not found")
@@ -151,7 +153,7 @@ namespace petmat.Controllers
         public async Task<IActionResult> UpdateName([FromBody] UpdateNameDto dto)
         {
             var userId = User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var (success, message) = await _authService.UpdateNameAsync(userId, dto.FirstName, dto.LastName);
+            var (success, message) = await _authUserService.UpdateNameAsync(userId, dto.FirstName, dto.LastName);
 
             if (!success)
                 return Unauthorized(new ApiErrorResponse(401, message));
@@ -166,7 +168,7 @@ namespace petmat.Controllers
         public async Task<IActionResult> UpdatePhone([FromBody] UpdatePhoneDto dto)
         {
             var userId = User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var (success, message) = await _authService.UpdatePhoneAsync(userId, dto.PhoneNumber);
+            var (success, message) = await _authUserService.UpdatePhoneAsync(userId, dto.PhoneNumber);
 
             if (!success)
                 return Unauthorized(new ApiErrorResponse(401, message));
@@ -184,7 +186,7 @@ namespace petmat.Controllers
             var userId = User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
-            var (success, message, pictureUrl) = await _authService.UpdateProfilePictureAsync(userId, dto.Picture, baseUrl);
+            var (success, message, pictureUrl) = await _authUserService.UpdateProfilePictureAsync(userId, dto.Picture, baseUrl);
 
             if (!success)
                 return message.Contains("not found")
@@ -202,7 +204,7 @@ namespace petmat.Controllers
         public async Task<IActionResult> CreateOrUpdateAddress([FromBody] AddressDto dto)
         {
             var userId = User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var (success, message) = await _authService.CreateOrUpdateAddressAsync(userId, dto);
+            var (success, message) = await _authUserService.CreateOrUpdateAddressAsync(userId, dto);
 
             if (!success)
                 return Unauthorized(new ApiErrorResponse(401, message));
@@ -268,7 +270,7 @@ namespace petmat.Controllers
                 return Unauthorized(new ApiErrorResponse(401, "User not authenticated"));
 
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var (success, message, profile) = await _authService.GetUserProfileAsync(userId, baseUrl);
+            var (success, message, profile) = await _authUserService.GetUserProfileAsync(userId, baseUrl);
 
             if (!success)
                 return Unauthorized(new ApiErrorResponse(401, message));
@@ -286,7 +288,7 @@ namespace petmat.Controllers
         public async Task<IActionResult> GetUserProfileById(string userId)
         {
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var (success, message, profile) = await _authService.GetPublicUserProfileAsync(userId, baseUrl);
+            var (success, message, profile) = await _authUserService.GetPublicUserProfileAsync(userId, baseUrl);
 
             if (!success)
                 return NotFound(new ApiErrorResponse(404, message));

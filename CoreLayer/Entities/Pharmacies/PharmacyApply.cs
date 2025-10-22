@@ -47,9 +47,7 @@ namespace CoreLayer.Entities.Pharmacies
 
         public DateTime AppliedAt { get; set; } = DateTime.UtcNow;
 
-        public string AdminNotes { get; set; }
-
-        public string RejectionReason { get; set; }
+        public string? RejectionReason { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

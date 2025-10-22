@@ -4,10 +4,9 @@ using petmat.Errors;
 
 namespace petmat.Controllers
 {
-    [Route("error/{code}")]
-    [ApiController]
+
     [ApiExplorerSettings(IgnoreApi = true)]
-    public class ErrorsController : Controller
+    public class ErrorsController : BaseApiController
     {
         public IActionResult Error(int code)
         {

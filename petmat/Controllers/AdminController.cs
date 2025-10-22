@@ -3,9 +3,10 @@ using CoreLayer;
 using CoreLayer.Dtos;
 using CoreLayer.Dtos.Admin;
 using CoreLayer.Dtos.Doctor;
+using CoreLayer.Dtos.Pharmacy;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
-using CoreLayer.Service_Interface;
+using CoreLayer.Service_Interface.Admin;
 using CoreLayer.Specifications.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,16 +16,24 @@ using petmat.Errors;
 
 namespace petmat.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
     [Authorize(Roles = "Admin")]
-    public class AdminController : ControllerBase
+    public class AdminController : BaseApiController
     {
-        private readonly IAdminService _adminService;
 
-        public AdminController(IAdminService adminService)
+        private readonly IAdminAnimalManagement _adminAnimalManagement;
+        private readonly IAdminUserManagement _adminUserManagement;
+        private readonly IAdminDoctorApplicationManagement _adminDoctorApplicationManagement;
+        private readonly IAdminPharmacyApplicationManagement _adminPharmacyApplicationManagement;
+
+        public AdminController(IAdminUserManagement adminUserManagement,
+            IAdminAnimalManagement adminAnimalManagement
+            ,IAdminDoctorApplicationManagement adminDoctorApplicationManagement,
+            IAdminPharmacyApplicationManagement adminPharmacyApplicationManagement)
         {
-            _adminService = adminService;
+            _adminAnimalManagement = adminAnimalManagement;
+            _adminUserManagement = adminUserManagement;
+            _adminDoctorApplicationManagement = adminDoctorApplicationManagement;
+            _adminPharmacyApplicationManagement = adminPharmacyApplicationManagement;
         }
 
         // ==================== USER MANAGEMENT ====================
@@ -33,12 +42,17 @@ namespace petmat.Controllers
         [ProducesResponseType(typeof(UserBlockResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
         [HttpPost("block-user/{userId}")]
         public async Task<ActionResult<UserBlockResponseDto>> BlockUser(string userId)
         {
+
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
             try
             {
-                var result = await _adminService.BlockUserAsync(userId);
+                var result = await _adminUserManagement.BlockUserAsync(userId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -56,12 +70,16 @@ namespace petmat.Controllers
         [ProducesResponseType(typeof(UserBlockResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
         [HttpPost("unblock-user/{userId}")]
         public async Task<ActionResult<UserBlockResponseDto>> UnblockUser(string userId)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
             try
             {
-                var result = await _adminService.UnblockUserAsync(userId);
+                var result = await _adminUserManagement.UnblockUserAsync(userId);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -88,7 +106,7 @@ namespace petmat.Controllers
 
             try
             {
-                var result = await _adminService.AddSpeciesAsync(dto);
+                var result = await _adminAnimalManagement.AddSpeciesAsync(dto);
                 return Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -107,7 +125,7 @@ namespace petmat.Controllers
         {
             try
             {
-                var result = await _adminService.DeleteSpeciesAsync(id);
+                var result = await _adminAnimalManagement.DeleteSpeciesAsync(id);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -135,7 +153,7 @@ namespace petmat.Controllers
 
             try
             {
-                var result = await _adminService.AddSubSpeciesAsync(dto);
+                var result = await _adminAnimalManagement.AddSubSpeciesAsync(dto);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -158,7 +176,7 @@ namespace petmat.Controllers
         {
             try
             {
-                var result = await _adminService.DeleteSubSpeciesAsync(id);
+                var result = await _adminAnimalManagement.DeleteSubSpeciesAsync(id);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -185,7 +203,7 @@ namespace petmat.Controllers
 
             try
             {
-                var result = await _adminService.AddColorAsync(dto);
+                var result = await _adminAnimalManagement.AddColorAsync(dto);
                 return Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -204,7 +222,7 @@ namespace petmat.Controllers
         {
             try
             {
-                var result = await _adminService.DeleteColorAsync(id);
+                var result = await _adminAnimalManagement.DeleteColorAsync(id);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -225,7 +243,7 @@ namespace petmat.Controllers
         [HttpGet("doctor-applications/pending")]
         public async Task<ActionResult<DoctorApplicationListDto>> GetPendingDoctorApplications()
         {
-            var result = await _adminService.GetPendingDoctorApplicationsAsync();
+            var result = await _adminDoctorApplicationManagement.GetPendingDoctorApplicationsAsync();
             return Ok(result);
         }
 
@@ -235,7 +253,7 @@ namespace petmat.Controllers
         [HttpGet("doctor-applications")]
         public async Task<ActionResult<DoctorApplicationListDto>> GetAllDoctorApplications([FromQuery] string? status = null)
         {
-            var result = await _adminService.GetAllDoctorApplicationsAsync(status);
+            var result = await _adminDoctorApplicationManagement.GetAllDoctorApplicationsAsync(status);
             return Ok(result);
         }
 
@@ -247,7 +265,7 @@ namespace petmat.Controllers
         {
             try
             {
-                var result = await _adminService.GetDoctorApplicationByIdAsync(id);
+                var result = await _adminDoctorApplicationManagement.GetDoctorApplicationByIdAsync(id);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -270,7 +288,7 @@ namespace petmat.Controllers
 
             try
             {
-                var result = await _adminService.ReviewDoctorApplicationAsync(id, dto);
+                var result = await _adminDoctorApplicationManagement.ReviewDoctorApplicationAsync(id, dto);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -282,5 +300,75 @@ namespace petmat.Controllers
                 return BadRequest(new ApiErrorResponse(400, ex.Message));
             }
         }
+
+
+        // ==================== PHARMACY APPLICATION MANAGEMENT ====================
+
+
+        /// Get all pending pharmacy applications
+        [ProducesResponseType(typeof(PharmacyApplicationListDto), StatusCodes.Status200OK)]
+        [HttpGet("pharmacy-applications/pending")]
+        public async Task<ActionResult<PharmacyApplicationListDto>> GetPendingPharmacyApplications()
+        {
+            var result = await _adminPharmacyApplicationManagement.GetPendingPharmacyApplicationsAsync();
+            return Ok(result);
+        }
+
+
+        /// Get all pharmacy applications with optional status filter
+        [ProducesResponseType(typeof(PharmacyApplicationListDto), StatusCodes.Status200OK)]
+        [HttpGet("pharmacy-applications")]
+        public async Task<ActionResult<PharmacyApplicationListDto>> GetAllPharmacyApplications([FromQuery] string? status = null)
+        {
+            var result = await _adminPharmacyApplicationManagement.GetAllPharmacyApplicationsAsync(status);
+            return Ok(result);
+        }
+
+
+        /// Get pharmacy application by ID
+        [ProducesResponseType(typeof(PharmacyApplicationDetailDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpGet("pharmacy-applications/{id}")]
+        public async Task<ActionResult<PharmacyApplicationDetailDto>> GetPharmacyApplicationById(Guid id)
+        {
+            try
+            {
+                var result = await _adminPharmacyApplicationManagement.GetPharmacyApplicationByIdAsync(id);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+        }
+
+
+        /// Review pharmacy application (Approve or Reject)
+        [ProducesResponseType(typeof(ApplicationReviewResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpPost("pharmacy-applications/{id}/review")]
+        public async Task<ActionResult<ApplicationReviewResponseDto>> ReviewPharmacyApplication(
+            Guid id, [FromBody] ReviewPharmacyApplicationDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var result = await _adminPharmacyApplicationManagement.ReviewPharmacyApplicationAsync(id, dto);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+
     }
 }

@@ -9,7 +9,7 @@ using CoreLayer.Dtos.Doctor;
 using CoreLayer.Entities.Doctors;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Helper.Documents;
-using CoreLayer.Service_Interface;
+using CoreLayer.Service_Interface.Doctor;
 using Microsoft.AspNetCore.Identity;
 
 namespace ServiceLayer.Services.Doctor
@@ -52,8 +52,6 @@ namespace ServiceLayer.Services.Doctor
                 throw new KeyNotFoundException("Doctor profile not found");
 
             // Update fields if provided
-            if (dto.Latitude.HasValue) profile.Latitude = dto.Latitude.Value;
-            if (dto.Longitude.HasValue) profile.Longitude = dto.Longitude.Value;
             if (!string.IsNullOrEmpty(dto.Specialization)) profile.Specialization = dto.Specialization;
             if (dto.ExperienceYears.HasValue) profile.ExperienceYears = dto.ExperienceYears.Value;
             if (!string.IsNullOrEmpty(dto.ClinicAddress)) profile.ClinicAddress = dto.ClinicAddress;

@@ -83,6 +83,8 @@ public class GenaricRepository<TEntity, TKey> : IGenaricRepository<TEntity, TKey
     {
         await _dbContext.Set<TEntity>().AddRangeAsync(entities);
     }
+
+    //refactor function specifications pattern
     private IQueryable<TEntity> ApplySpecfications(ISpecifications<TEntity, TKey> spec)
     {
         return SpecificationsEvaluator<TEntity, TKey>.GetQuery(_dbContext.Set<TEntity>(), spec);
@@ -108,7 +110,7 @@ public class GenaricRepository<TEntity, TKey> : IGenaricRepository<TEntity, TKey
         return await ApplySpecfications(spec)
             .AsNoTracking()
             .ProjectTo<TDto>(mapperConfig)
-            .ToListAsync();
+            .ToListAsync(); //get list async of set specified entity and project to dto
     }
 
 }

@@ -4,7 +4,6 @@ using petmat.Errors;
 namespace petmat.Middleware
 {
     public class ExceptionMiddleware
-    // i must add this middel ware in program app.UseMiddleware<ExceptionMiddleware>();
     //by adding the middle ware if any Exception happend this will run this calss,like i put my project in try catch
     {
         private readonly RequestDelegate _next;

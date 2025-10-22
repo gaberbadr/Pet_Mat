@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 using CoreLayer.Dtos.Doctor;
-using CoreLayer.Service_Interface;
+using CoreLayer.Service_Interface.Doctor;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,10 +8,9 @@ using petmat.Errors;
 
 namespace petmat.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+
     [Authorize(Roles = "Doctor")]
-    public class DoctorController : ControllerBase
+    public class DoctorController : BaseApiController
     {
         private readonly IDoctorService _doctorService;
 
@@ -69,7 +68,7 @@ namespace petmat.Controllers
         [ProducesResponseType(typeof(DoctorProfileOperationResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-        [HttpPatch("location")]
+        [HttpPut("location")]
         public async Task<ActionResult<DoctorProfileOperationResponseDto>> UpdateLocation([FromBody] UpdateDoctorLocationDto dto)
         {
             if (!ModelState.IsValid)

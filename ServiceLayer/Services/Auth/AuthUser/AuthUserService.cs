@@ -1,0 +1,377 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+using CoreLayer;
+using CoreLayer.Dtos.Auth;
+using CoreLayer.Entities.Animals;
+using CoreLayer.Entities.Community;
+using CoreLayer.Entities.Doctors;
+using CoreLayer.Entities.Identity;
+using CoreLayer.Entities.Pharmacies;
+using CoreLayer.Helper.Documents;
+using CoreLayer.Service_Interface;
+using CoreLayer.Service_Interface.IAuth;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+
+
+namespace ServiceLayer.Services.Auth.AuthUser
+{
+    public class AuthUserService : IAuthUserService
+    {
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IEmailSender _emailSender;
+        private readonly IJwtService _jwtService;
+        private readonly ILoginRateLimiterService _loginRateLimiter;
+
+        public AuthUserService(
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
+            IUnitOfWork unitOfWork,
+            IEmailSender emailSender,
+            IJwtService jwtService,
+            ILoginRateLimiterService loginRateLimiter)
+        {
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _unitOfWork = unitOfWork;
+            _emailSender = emailSender;
+            _jwtService = jwtService;
+            _loginRateLimiter = loginRateLimiter;
+        }
+
+        public async Task<(bool Success, string Message, TokenResponseDto? Token, int? BanMinutes)> LoginAsync(
+      string email, string password, string? ipAddress)
+        {
+            var (isAllowed, banDuration) = await _loginRateLimiter.CheckLoginAttemptAsync(email);
+            if (!isAllowed)
+            {
+                var minutes = (int)banDuration.Value.TotalMinutes;
+                return (false, $"Too many failed login attempts. Please try again in {minutes} minutes.", null, minutes);
+            }
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                await _loginRateLimiter.RecordLoginAttemptAsync(email, false, ipAddress);
+                return (false, "Invalid email or password", null, null);
+            }
+
+            if (!user.HasPasswordAsync)
+            {
+                return (false, "No password set. Please use OTP login or set a password first", null, null);
+            }
+
+            var result = await _signInManager.CheckPasswordSignInAsync(user, password, false);
+
+            if (!result.Succeeded)
+            {
+                await _loginRateLimiter.RecordLoginAttemptAsync(email, false, ipAddress);
+                return (false, "Invalid email or password", null, null);
+            }
+
+            await _loginRateLimiter.RecordLoginAttemptAsync(email, true, ipAddress);
+            await _loginRateLimiter.ResetLoginAttemptsAsync(email);
+
+            var tokenResponse = await GenerateTokenResponseAsync(user, ipAddress);
+            return (true, "Login successful", tokenResponse, null);
+        }
+
+        public async Task<(bool Success, string Message)> CreatePasswordAsync(string userId, string password)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return (false, "User not found");
+
+            if (user.HasPasswordAsync)
+                return (false, "Password already exists. Use update-password endpoint");
+
+            var result = await _userManager.AddPasswordAsync(user, password);
+            if (!result.Succeeded)
+                return (false, string.Join(", ", result.Errors.Select(e => e.Description)));
+
+            user.HasPasswordAsync = true;
+            await _userManager.UpdateAsync(user);
+
+            return (true, "Password created successfully");
+        }
+
+        public async Task<(bool Success, string Message)> UpdatePasswordAsync(string userId, string oldPassword, string newPassword)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return (false, "User not found");
+
+            if (!user.HasPasswordAsync)
+                return (false, "No password set. Use create-password endpoint");
+
+            var result = await _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
+            if (!result.Succeeded)
+                return (false, string.Join(", ", result.Errors.Select(e => e.Description)));
+
+            return (true, "Password updated successfully");
+        }
+
+        public async Task<(bool Success, string Message)> UpdateNameAsync(string userId, string firstName, string lastName)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return (false, "User not found");
+
+            user.FirstName = firstName;
+            user.LastName = lastName;
+            await _userManager.UpdateAsync(user);
+
+            return (true, "Name updated successfully");
+        }
+
+        public async Task<(bool Success, string Message)> UpdatePhoneAsync(string userId, string phoneNumber)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return (false, "User not found");
+
+            user.PhoneNumber = phoneNumber;
+            await _userManager.UpdateAsync(user);
+
+            return (true, "Phone number updated successfully");
+        }
+
+        public async Task<(bool Success, string Message, string? PictureUrl)> UpdateProfilePictureAsync(
+            string userId, IFormFile picture, string baseUrl)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return (false, "User not found", null);
+
+            if (picture == null || picture.Length == 0)
+                return (false, "No file uploaded", null);
+
+            if (!string.IsNullOrEmpty(user.ProfilePicture))
+            {
+                DocumentSetting.Delete(user.ProfilePicture, "profiles");
+            }
+
+            var fileName = DocumentSetting.Upload(picture, "profiles");
+            user.ProfilePicture = fileName;
+            await _userManager.UpdateAsync(user);
+
+            var pictureUrl = DocumentSetting.GetFileUrl(fileName, "profiles", baseUrl);
+            return (true, "Profile picture updated successfully", pictureUrl);
+        }
+
+        public async Task<(bool Success, string Message)> CreateOrUpdateAddressAsync(string userId, AddressDto dto)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return (false, "User not found");
+
+            var addressRepo = _unitOfWork.Repository<Address, int>();
+
+            if (user.AddressId.HasValue)
+            {
+                var address = await addressRepo.GetAsync(user.AddressId.Value);
+                if (address != null)
+                {
+                    address.City = dto.City;
+                    address.Government = dto.Government;
+                    addressRepo.Update(address);
+                }
+            }
+            else
+            {
+                var address = new Address
+                {
+                    City = dto.City,
+                    Government = dto.Government,
+                };
+                await addressRepo.AddAsync(address);
+                await _unitOfWork.CompleteAsync();
+
+                user.AddressId = address.Id;
+                await _userManager.UpdateAsync(user);
+            }
+
+            await _unitOfWork.CompleteAsync();
+            return (true, "Address updated successfully");
+        }
+
+        public async Task<(bool Success, string Message, UserProfileDto? Profile)> GetUserProfileAsync(
+     string userId, string baseUrl)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return (false, "User not found", null);
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            AddressDto? addressDto = null;
+
+            if (user.AddressId.HasValue)
+            {
+                var addressRepo = _unitOfWork.Repository<Address, int>();
+                var address = await addressRepo.GetAsync(user.AddressId.Value);
+
+                if (address != null)
+                {
+                    addressDto = new AddressDto
+                    {
+                        Id = address.Id,
+                        City = address.City,
+                        Government = address.Government
+                    };
+                }
+            }
+
+            var profile = new UserProfileDto
+            {
+                Id = user.Id,
+                Email = user.Email ?? "",
+                EmailConfirmed = user.EmailConfirmed,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
+                Roles = roles.ToList(),
+                HasPassword = user.HasPasswordAsync,
+                ProfilePhotoUrl = !string.IsNullOrEmpty(user.ProfilePicture)
+                    ? DocumentSetting.GetFileUrl(user.ProfilePicture, "profiles", baseUrl)
+                    : null,
+                Address = addressDto
+            };
+
+            return (true, "Profile retrieved successfully", profile);
+        }
+
+
+        public async Task<(bool Success, string Message, PublicUserProfileDto? Profile)> GetPublicUserProfileAsync(
+            string userId, string baseUrl)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || !user.IsActive)
+                return (false, "User not found", null);
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var isDoctor = roles.Contains("Doctor");
+            var isPharmacy = roles.Contains("Pharmacy");
+
+            // Get address info
+            AddressDto? addressDto = null;
+            if (user.AddressId.HasValue)
+            {
+                var addressRepo = _unitOfWork.Repository<Address, int>();
+                var address = await addressRepo.GetAsync(user.AddressId.Value);
+                if (address != null)
+                {
+                    addressDto = new AddressDto
+                    {
+                        City = address.City,
+                        Government = address.Government
+                    };
+                }
+            }
+
+            var profile = new PublicUserProfileDto
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                ProfilePhotoUrl = !string.IsNullOrEmpty(user.ProfilePicture)
+                    ? DocumentSetting.GetFileUrl(user.ProfilePicture, "profiles", baseUrl)
+                    : null,
+                City = addressDto?.City,
+                Government = addressDto?.Government,
+                CreatedAt = user.CreatedAt,
+                IsDoctor = isDoctor,
+                IsPharmacy = isPharmacy
+            };
+
+            // Get doctor-specific info if applicable
+            if (isDoctor)
+            {
+                var doctorProfileRepo = _unitOfWork.Repository<DoctorProfile, Guid>();
+                var doctorProfile = (await doctorProfileRepo.FindAsync(dp => dp.UserId == userId && dp.IsActive))
+                    .FirstOrDefault();
+
+                if (doctorProfile != null)
+                {
+                    profile.Specialization = doctorProfile.Specialization;
+                    profile.ExperienceYears = doctorProfile.ExperienceYears;
+                    profile.DoctorAverageRating = doctorProfile.AverageRating;
+                    profile.DoctorTotalRatings = doctorProfile.TotalRatings;
+                }
+            }
+
+            // Get pharmacy-specific info if applicable
+            if (isPharmacy)
+            {
+                var pharmacyProfileRepo = _unitOfWork.Repository<PharmacyProfile, Guid>();
+                var pharmacyProfile = (await pharmacyProfileRepo.FindAsync(pp => pp.UserId == userId && pp.IsActive))
+                    .FirstOrDefault();
+
+                if (pharmacyProfile != null)
+                {
+                    profile.PharmacyName = pharmacyProfile.PharmacyName;
+                    profile.PharmacyAverageRating = pharmacyProfile.AverageRating;
+                    profile.PharmacyTotalRatings = pharmacyProfile.TotalRatings;
+                }
+            }
+
+            // Get activity stats
+            var animalRepo = _unitOfWork.Repository<Animal, int>();
+            var listingRepo = _unitOfWork.Repository<AnimalListing, int>();
+            var postRepo = _unitOfWork.Repository<Post, int>();
+
+            profile.TotalAnimals = (await animalRepo.FindAsync(a => a.OwnerId == userId && a.IsActive)).Count();
+            profile.TotalListings = (await listingRepo.FindAsync(al => al.OwnerId == userId && al.IsActive)).Count();
+            profile.TotalPosts = (await postRepo.FindAsync(p => p.UserId == userId && p.IsActive)).Count();
+
+            return (true, "Profile retrieved successfully", profile);
+        }
+
+        // Private helper method
+        private async Task<TokenResponseDto> GenerateTokenResponseAsync(ApplicationUser user, string? ipAddress)
+        {
+            var (accessToken, accessExp) = await _jwtService.GenerateAccessTokenAsync(user, _userManager);
+
+            var refreshTokenRepo = _unitOfWork.Repository<RefreshToken, int>();
+            var existingTokens = await refreshTokenRepo.FindAsync(t =>
+                t.UserId == user.Id && t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow);
+            var existingToken = existingTokens.OrderByDescending(t => t.ExpiresAt).FirstOrDefault();
+
+            string refreshToken;
+            DateTime refreshExp;
+
+            if (existingToken != null)
+            {
+                refreshToken = existingToken.Token;
+                refreshExp = existingToken.ExpiresAt;
+            }
+            else
+            {
+                (refreshToken, refreshExp) = _jwtService.GenerateRefreshToken();
+                await refreshTokenRepo.AddAsync(new RefreshToken
+                {
+                    Token = refreshToken,
+                    UserId = user.Id,
+                    CreatedAt = DateTime.UtcNow,
+                    ExpiresAt = refreshExp,
+                    CreatedByIp = ipAddress
+                });
+                await _unitOfWork.CompleteAsync();
+            }
+
+            return new TokenResponseDto
+            {
+                AccessToken = accessToken,
+                AccessTokenExpiresAt = accessExp,
+                RefreshToken = refreshToken,
+                RefreshTokenExpiresAt = refreshExp
+            };
+        }
+    }
+}

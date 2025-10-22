@@ -43,7 +43,7 @@ namespace CoreLayer.Entities.Doctors
 
         public DateTime AppliedAt { get; set; } = DateTime.UtcNow;
 
-        public string RejectionReason { get; set; }
+        public string? RejectionReason { get; set; }
 
         // Navigation Properties
         [ForeignKey("UserId")]
