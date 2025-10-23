@@ -9,7 +9,8 @@ services:
     ports:
       - "${API_PORT:-5000}:8080"
     depends_on:
-      - db  
+      db:
+        condition: service_healthy  # Wait for DB to be healthy
     environment:
       ConnectionStrings__DefaultConnection: "${ConnectionStrings__DefaultConnection}"
       JWT__Key: "${JWT__Key}"
@@ -26,11 +27,18 @@ services:
       BaseURL: "${BaseURL}"
       Frontend__BaseUrl: "${Frontend__BaseUrl}"
       ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: "Production"
     volumes:
       - api_files:/app/wwwroot/files
     networks:
       - petmat-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/swagger/index.html"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -46,6 +54,12 @@ services:
     networks:
       - petmat-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   sql_data:
