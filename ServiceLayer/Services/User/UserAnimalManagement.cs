@@ -298,6 +298,39 @@ namespace ServiceLayer.Services.User
             };
         }
 
+        public async Task<ListingOperationResponseDto> UpdateListingStatusAsync(int listingId, string userId, string newStatus)
+        {
+            var listing = await _unitOfWork.Repository<AnimalListing, int>().GetAsync(listingId);
+            if (listing == null)
+                throw new KeyNotFoundException("Listing not found");
+
+            if (listing.OwnerId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to update this listing");
+
+            // Check if status is already the same
+            if (string.Equals(listing.Status, newStatus, StringComparison.OrdinalIgnoreCase))
+            {
+                return new ListingOperationResponseDto
+                {
+                    Success = false,
+                    Message = $"Listing status is already '{newStatus}'.",
+                    ListingId = listing.Id
+                };
+            }
+
+            listing.Status = newStatus;
+            _unitOfWork.Repository<AnimalListing, int>().Update(listing);
+            await _unitOfWork.CompleteAsync();
+
+            return new ListingOperationResponseDto
+            {
+                Success = true,
+                Message = $"Listing status updated to '{newStatus}' successfully",
+                ListingId = listing.Id
+            };
+        }
+
+
         public async Task<ListingOperationResponseDto> DeleteAnimalListingAsync(int id, string userId)
         {
             var listing = await _unitOfWork.Repository<AnimalListing, int>().GetAsync(id);

@@ -35,7 +35,7 @@ namespace CoreLayer.Service_Interface.User
 
         Task<ListingOperationResponseDto> AddAnimalListingAsync(AddAnimalListingDto dto, string userId);
 
-
+        Task<ListingOperationResponseDto> UpdateListingStatusAsync(int listingId, string userId, string newStatus);
         Task<ListingOperationResponseDto> DeleteAnimalListingAsync(int id, string userId);
 
         // ==================== SPECIES INFO ====================

@@ -6,6 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Entities.Orders;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CoreLayer.Entities.Animals
 {

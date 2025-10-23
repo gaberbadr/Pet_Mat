@@ -43,12 +43,6 @@ namespace CoreLayer.Entities.Orders
 
         public string ClientSecret { get; set; }
 
-        [MaxLength(50)]
-        public string PaymentMethod { get; set; }
-
-        [MaxLength(50)]
-        public string PaymentStatus { get; set; }
-
         public int ShippingAddressId { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -215,6 +215,37 @@ namespace petmat.Controllers
             }
         }
 
+        /// Update the status of an animal listing
+        [ProducesResponseType(typeof(ListingOperationResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [HttpPut("listing/{id}/status")]
+        public async Task<ActionResult<ListingOperationResponseDto>> UpdateListingStatus(int id, [FromBody] UpdateListingStatusDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var userId = GetUserId();
+                var result = await _userAnimalManagement.UpdateListingStatusAsync(id, userId, dto.NewStatus);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new ApiErrorResponse(403, ex.Message));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
 
         /// Delete an animal listing
         [ProducesResponseType(typeof(ListingOperationResponseDto), StatusCodes.Status200OK)]

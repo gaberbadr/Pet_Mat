@@ -50,6 +50,14 @@ namespace CoreLayer.Dtos.Admin
         public string Message { get; set; }
     }
 
+    public class UserRolesResponseDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public List<string> RolesRemoved { get; set; } = new();
+        public string Message { get; set; } = string.Empty;
+    }
+
     public class SpeciesResponseDto
     {
         public int Id { get; set; }
@@ -79,4 +87,6 @@ namespace CoreLayer.Dtos.Admin
         public string Message { get; set; }
         public int? DeletedId { get; set; }
     }
+
+
 }

@@ -61,6 +61,12 @@ namespace ServiceLayer.Services.Auth.AuthUser
                     await _userManager.CreateAsync(user);
                 }
 
+                // check if blocked
+                if (!user.IsActive)
+                {
+                    return (false, "This account is blocked. Please contact support.");
+                }
+
                 var code = new Random().Next(100000, 999999).ToString();
                 user.VerificationCode = code;
                 user.CodeExpiresAt = DateTime.UtcNow.AddMinutes(3);
@@ -82,6 +88,9 @@ namespace ServiceLayer.Services.Auth.AuthUser
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
                 return (false, "Invalid email", null);
+
+            if (!user.IsActive)
+                return (false, "User is blocked", null);
 
             if (user.CodeExpiresAt < DateTime.UtcNow)
                 return (false, "Verification code expired", null);
@@ -110,6 +119,9 @@ namespace ServiceLayer.Services.Auth.AuthUser
             var user = await _userManager.FindByIdAsync(tokenEntry.UserId);
             if (user == null)
                 return (false, "Invalid token user", null);
+
+            if (!user.IsActive)
+                return (false, "User is blocked", null);
 
             tokenEntry.RevokedAt = DateTime.UtcNow;
             refreshTokenRepo.Update(tokenEntry);

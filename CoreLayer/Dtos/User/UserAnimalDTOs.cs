@@ -125,6 +125,12 @@ namespace CoreLayer.Dtos.User
         public int Count { get; set; }
         public IEnumerable<AnimalDto> Data { get; set; }
     }
+    public class UpdateListingStatusDto
+    {
+        [Required]
+        [MaxLength(50)]
+        public string NewStatus { get; set; }
+    }
 
     public class AnimalDto
     {

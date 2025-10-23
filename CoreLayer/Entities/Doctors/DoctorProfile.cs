@@ -15,9 +15,9 @@ namespace CoreLayer.Entities.Doctors
         [Required]
         public string UserId { get; set; }
 
-        public double? Latitude { get; set; }
+        public double Latitude { get; set; }
 
-        public double? Longitude { get; set; }
+        public double Longitude { get; set; }
 
         [MaxLength(200)]
         public string Specialization { get; set; }

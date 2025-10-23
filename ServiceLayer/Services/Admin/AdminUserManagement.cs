@@ -53,6 +53,9 @@ namespace ServiceLayer.Services.Admin
             if (!result.Succeeded)
                 throw new InvalidOperationException($"Failed to block user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
 
+            // Invalidate all active tokens immediately
+            await _userManager.UpdateSecurityStampAsync(user);
+
             return new UserBlockResponseDto
             {
                 UserId = user.Id,
