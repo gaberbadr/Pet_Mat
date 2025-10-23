@@ -39,6 +39,12 @@ namespace petmat.ProgramHelper
             // Configure file serving with proper MIME types
             var filesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files");
 
+            // Create directory if it doesn't exist
+            if (!Directory.Exists(filesPath))
+            {
+                Directory.CreateDirectory(filesPath);
+            }
+
             var allowedExtensions = new[]
             {
                 ".jpg", ".jpeg", ".png", ".gif", ".webp",
@@ -88,12 +94,12 @@ namespace petmat.ProgramHelper
                 }
             });
 
-            app.UseAuthorization();
-
-            // Custom middleware
+            // Custom middleware - MUST come before UseStatusCodePages
             app.UseMiddleware<ExceptionMiddleware>();
             app.UseMiddleware<UserActiveStatusMiddleware>();
             app.UseMiddleware<SecurityHeadersMiddleware>();
+
+            // Status code pages - this will catch 404s and redirect to /error/{statusCode}
             app.UseStatusCodePagesWithReExecute("/error/{0}");
 
             return app;
