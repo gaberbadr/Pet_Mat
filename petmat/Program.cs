@@ -37,14 +37,15 @@ namespace petmat
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // ===== FIXED: Configuration setup for Docker =====
+            // Load environment variables FIRST (for Docker .env support)
+            builder.Configuration.AddEnvironmentVariables();
 
-            // Configuration - Load this FIRST before any services
-            builder.Configuration
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddEnvironmentVariables();
+            // Then load appsettings.json only if it exists (optional for Docker)
+            builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
-
+            // Add dependency injection
             builder.Services.AddDependency(builder.Configuration);
 
 
