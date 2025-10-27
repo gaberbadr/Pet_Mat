@@ -48,56 +48,6 @@ namespace petmat
             // Add dependency injection
             builder.Services.AddDependency(builder.Configuration);
 
-
-
-            // JWT Configuration
-            var jwtKey = builder.Configuration["JWT:Key"] ?? "DefaultKeyForDevelopmentOnlyNotForProduction123";
-            var key = Encoding.UTF8.GetBytes(jwtKey);
-
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidateLifetime = true,
-                    ValidIssuer = builder.Configuration["JWT:Issuer"] ?? "http://localhost:5000/",
-                    ValidAudience = builder.Configuration["JWT:Audience"] ?? "petmatAPI",
-                    IssuerSigningKey = new SymmetricSecurityKey(key)
-                };
-
-                options.Events = new JwtBearerEvents
-                {
-                    OnChallenge = context =>
-                    {
-                        // Block default reply
-                        context.HandleResponse();
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                        context.Response.ContentType = "application/json";
-
-                        return context.Response.WriteAsync(
-                            "{\"error\": \"Unauthorized - Please login or provide a valid token.\"}");
-                    },
-                    OnForbidden = context =>//rather than  redirect to 403 page return empty json message
-                    {
-                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                        context.Response.ContentType = "application/json";
-                        var message = $"Access denied . You don't have permission to access this area.";
-
-                        return context.Response.WriteAsync($"{{\"error\": \"{message}\"}}");
-                    }
-                };
-            });
-
-
           
             var app = builder.Build();
 

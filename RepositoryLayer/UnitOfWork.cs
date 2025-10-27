@@ -12,7 +12,7 @@ using RepositoryLayer.Data.Context;
 
 namespace RepositoryLayer
 {
-    public class UnitOfWork : IUnitOfWork
+    public class UnitOfWork : IUnitOfWork, IDisposable
     {
         private readonly ApplicationDbContext _StoreDBContext;
 
@@ -50,6 +50,26 @@ namespace RepositoryLayer
             }
 
             return _HashtableRepos[type] as IGenaricRepository<TEntity, Tkey>;
+        }
+
+        private bool _disposed = false;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _StoreDBContext.Dispose();
+                }
+                _disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
     }

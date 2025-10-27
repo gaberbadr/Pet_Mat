@@ -45,6 +45,7 @@ namespace petmat.ProgramHelper
             services.AddCorsServices();
             services.AddApiValidationErrorResponseServices();
             services.AddLimiterServices();
+            services.AddJwtAuthenticationServices(configuration);
 
             return services;
         }
