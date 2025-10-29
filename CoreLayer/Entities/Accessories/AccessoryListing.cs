@@ -7,11 +7,12 @@ using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 
 namespace CoreLayer.Entities.Accessories
 {
     public class AccessoryListing : BaseEntity<int>
-    {
+    { 
 
         [Required]
         [MaxLength(200)]
@@ -23,13 +24,13 @@ namespace CoreLayer.Entities.Accessories
         public decimal Price { get; set; }
 
         [MaxLength(50)]
-        public string Condition { get; set; }
+        public AccessoryCondition Condition { get; set; }
 
         [MaxLength(100)]
-        public string Category { get; set; }
+        public AccessoryCategory Category { get; set; }
 
         [MaxLength(50)]
-        public string Status { get; set; } = "Active";
+        public ListingStatus Status { get; set; } = ListingStatus.Active;
 
         public string ImageUrls { get; set; }
 
@@ -38,14 +39,10 @@ namespace CoreLayer.Entities.Accessories
 
         public int? SpeciesId { get; set; }
 
-        public double Latitude { get; set; }
-
         public bool IsActive { get; set; } = true;
 
-        public double Longitude { get; set; }
 
         [MaxLength(200)]
-        public string Location { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

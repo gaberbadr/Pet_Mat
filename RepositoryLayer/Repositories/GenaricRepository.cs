@@ -105,12 +105,17 @@ public class GenaricRepository<TEntity, TKey> : IGenaricRepository<TEntity, TKey
         return await ApplySpecfications(spec).FirstOrDefaultAsync();
     }
 
-    public async Task<IEnumerable<TDto>> GetAllWithProjectionAsync<TDto>(ISpecifications<TEntity, TKey> spec, IConfigurationProvider mapperConfig)
+    //for simple entity profile to dto cause Faster and lighter, because it only retrieves the required columns from SQL.
+    public async Task<IEnumerable<TDto>> GetAllWithProjectionAsync<TDto>(
+        ISpecifications<TEntity, TKey> spec,
+        IConfigurationProvider mapperConfig)
     {
         return await ApplySpecfications(spec)
             .AsNoTracking()
             .ProjectTo<TDto>(mapperConfig)
             .ToListAsync(); //get list async of set specified entity and project to dto
     }
+
+
 
 }

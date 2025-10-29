@@ -41,6 +41,7 @@ namespace RepositoryLayer.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasMaxLength(200)
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
@@ -53,17 +54,6 @@ namespace RepositoryLayer.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
-
-                    b.Property<double>("Latitude")
-                        .HasColumnType("float");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<double>("Longitude")
-                        .HasColumnType("float");
 
                     b.Property<string>("OwnerId")
                         .IsRequired()
@@ -89,13 +79,15 @@ namespace RepositoryLayer.Migrations
 
                     b.HasIndex("Category");
 
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IsActive");
+
                     b.HasIndex("OwnerId");
 
                     b.HasIndex("SpeciesId");
 
                     b.HasIndex("Status");
-
-                    b.HasIndex("Latitude", "Longitude");
 
                     b.ToTable("AccessoryListings");
                 });

@@ -155,8 +155,11 @@ namespace ServiceLayer.Services.User
             var spec = new PharmacyListingFilterSpecification(filterParams);
             var countSpec = new PharmacyListingCountSpecification(filterParams);
 
-            var listingDtos = await _unitOfWork.Repository<PharmacyListing, int>()
-                .GetAllWithProjectionAsync<PharmacyListingResponseDto>(spec, _mapper.ConfigurationProvider);
+            // IMPORTANT: Load entities with navigation properties (NOT using ProjectTo) cause image URL needs base URL from config and complex mapping
+            var listings = await _unitOfWork.Repository<PharmacyListing, int>()
+                .GetAllWithSpecficationAsync(spec);
+            // Map in-memory - this allows complex transformations
+            var listingDtos = _mapper.Map<IEnumerable<PharmacyListingResponseDto>>(listings);
 
             var totalCount = await _unitOfWork.Repository<PharmacyListing, int>()
                 .GetCountAsync(countSpec);
@@ -205,8 +208,11 @@ namespace ServiceLayer.Services.User
             var spec = new PharmacyListingByOwnerSpecification(pharmacyId, modifiedParams);
             var countSpec = new PharmacyListingByOwnerCountSpecification(pharmacyId, modifiedParams);
 
-            var listingDtos = await _unitOfWork.Repository<PharmacyListing, int>()
-                .GetAllWithProjectionAsync<PharmacyListingResponseDto>(spec, _mapper.ConfigurationProvider);
+            // IMPORTANT: Load entities with navigation properties (NOT using ProjectTo) cause image URL needs base URL from config and complex mapping
+            var listings = await _unitOfWork.Repository<PharmacyListing, int>()
+                .GetAllWithSpecficationAsync(spec);
+            // Map in-memory - this allows complex transformations
+            var listingDtos = _mapper.Map<IEnumerable<PharmacyListingResponseDto>>(listings);
 
             var totalCount = await _unitOfWork.Repository<PharmacyListing, int>()
                 .GetCountAsync(countSpec);

@@ -22,6 +22,7 @@
     <Folder Include="wwwroot\files\documents\" />
     <Folder Include="wwwroot\files\images\" />
     <Folder Include="wwwroot\files\pharmacy-documents\" />
+    <Folder Include="wwwroot\files\pharmacy-listings\" />
     <Folder Include="wwwroot\files\profiles\" />
     <Folder Include="wwwroot\files\videos\" />
   </ItemGroup>

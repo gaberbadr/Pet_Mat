@@ -7,6 +7,7 @@ using CoreLayer.AutoMapper.PharmacyMapping;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Helper.EmailSend;
 using CoreLayer.Service_Interface;
+using CoreLayer.Service_Interface.Accessory;
 using CoreLayer.Service_Interface.Admin;
 using CoreLayer.Service_Interface.Doctor;
 using CoreLayer.Service_Interface.IAuth;
@@ -21,6 +22,7 @@ using Microsoft.IdentityModel.Tokens;
 using petmat.Errors;
 using RepositoryLayer;
 using RepositoryLayer.Data.Context;
+using ServiceLayer.Services.Accessory;
 using ServiceLayer.Services.Admin;
 using ServiceLayer.Services.Auth.AuthUser;
 using ServiceLayer.Services.Auth.Jwt;
@@ -148,6 +150,7 @@ namespace petmat.ProgramHelper
             services.AddScoped<IPharmacyService, PharmacyService>();
             services.AddScoped<IAdminPharmacyApplicationManagement, AdminPharmacyApplicationManagement>();
             services.AddScoped<IUserPharmacyManagement, UserPharmacyManagement>();
+            services.AddScoped<IUserAccessoryManagement, UserAccessoryManagement>();
 
 
 
@@ -169,6 +172,7 @@ namespace petmat.ProgramHelper
 
                 // Add profile that needs configuration through factory
                 config.AddProfile(new PharmacyMappingProfile(configuration));
+                config.AddProfile(new AccessoryMappingProfile(configuration));
             });
 
             return services;

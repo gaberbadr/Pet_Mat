@@ -209,7 +209,9 @@ namespace ServiceLayer.Services.Pharmacy
 
         // ==================== PHARMACY LISTINGS (PRODUCTS) ====================
 
-        public async Task<PaginationResponse<PharmacyListingResponseDto>> GetMyListingsAsync(string userId, PharmacyListingFilterParams filterParams)
+        public async Task<PaginationResponse<PharmacyListingResponseDto>> GetMyListingsAsync(
+            string userId,
+            PharmacyListingFilterParams filterParams)
         {
             if (filterParams.PageIndex < 1)
                 throw new ArgumentException("PageIndex must be greater than 0");
@@ -220,8 +222,12 @@ namespace ServiceLayer.Services.Pharmacy
             var spec = new PharmacyListingByOwnerSpecification(userId, filterParams);
             var countSpec = new PharmacyListingByOwnerCountSpecification(userId, filterParams);
 
-            var listingDtos = await _unitOfWork.Repository<PharmacyListing, int>()
-                .GetAllWithProjectionAsync<PharmacyListingResponseDto>(spec, _mapper.ConfigurationProvider);
+            // IMPORTANT: Load entities with navigation properties (NOT using ProjectTo) cause image URL needs base URL from config and complex mapping
+            var listings = await _unitOfWork.Repository<PharmacyListing, int>()
+                .GetAllWithSpecficationAsync(spec);
+
+            // Map in-memory - this allows complex transformations
+            var listingDtos = _mapper.Map<IEnumerable<PharmacyListingResponseDto>>(listings);
 
             var totalCount = await _unitOfWork.Repository<PharmacyListing, int>()
                 .GetCountAsync(countSpec);
