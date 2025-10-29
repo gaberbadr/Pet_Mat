@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 
 namespace CoreLayer.Entities.Pharmacies
 {
@@ -42,8 +43,7 @@ namespace CoreLayer.Entities.Pharmacies
         [MaxLength(500)]
         public string SyndicateCard { get; set; }
 
-        [MaxLength(50)]
-        public string Status { get; set; } = "Pending";
+        public ApplicationStatus Status { get; set; } = ApplicationStatus.Pending;
 
         public DateTime AppliedAt { get; set; } = DateTime.UtcNow;
 

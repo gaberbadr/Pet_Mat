@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Entities.Pharmacies;
+using CoreLayer.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,6 +14,14 @@ namespace RepositoryLayer.Data.Configurations.Pharmacy
     {
         public void Configure(EntityTypeBuilder<PharmacyListing> builder)
         {
+            // Convert Category enum to string
+            builder.Property(pl => pl.Category)
+                .HasConversion(
+                    category => category.ToString(),
+                    category => (PharmacyListingCategory)Enum.Parse(typeof(PharmacyListingCategory), category)
+                )
+                .HasMaxLength(100);
+
             builder.HasOne(pl => pl.Pharmacy)
                     .WithMany()
                     .HasForeignKey(pl => pl.PharmacyId)

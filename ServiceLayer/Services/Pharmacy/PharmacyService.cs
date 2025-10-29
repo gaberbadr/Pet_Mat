@@ -112,13 +112,13 @@ namespace ServiceLayer.Services.Pharmacy
                 _unitOfWork.Repository<PharmacyProfile, Guid>().Delete(profile);
             }
 
-            // Delete all pharmacy listings
+            // Soft delete all pharmacy listings (not physical deletion)
             var listings = await _unitOfWork.Repository<PharmacyListing, int>()
-                .FindAsync(pl => pl.PharmacyId == userId);
+                .FindAsync(pl => pl.PharmacyId == userId && pl.IsActive);
 
             foreach (var listing in listings)
             {
-                // Delete listing images
+               
                 if (!string.IsNullOrEmpty(listing.ImageUrls))
                 {
                     var imageNames = listing.ImageUrls.Split(',');
@@ -127,7 +127,11 @@ namespace ServiceLayer.Services.Pharmacy
                         DocumentSetting.Delete(imageName.Trim(), "pharmacy-listings");
                     }
                 }
-                _unitOfWork.Repository<PharmacyListing, int>().Delete(listing);
+
+                // Soft delete (mark as inactive)
+                listing.IsActive = false;
+
+                _unitOfWork.Repository<PharmacyListing, int>().Update(listing);
             }
 
             // Delete pharmacy application
@@ -163,7 +167,7 @@ namespace ServiceLayer.Services.Pharmacy
             return new PharmacyProfileOperationResponseDto
             {
                 Success = true,
-                Message = "Pharmacy account deleted successfully. Your pharmacy role has been removed."
+                Message = "Pharmacy account deleted successfully. All listings were deactivated and your pharmacy role removed."
             };
         }
 
@@ -322,7 +326,7 @@ namespace ServiceLayer.Services.Pharmacy
             if (!string.IsNullOrEmpty(dto.Description)) listing.Description = dto.Description;
             if (dto.Price.HasValue) listing.Price = dto.Price.Value;
             if (dto.Stock.HasValue) listing.Stock = dto.Stock.Value;
-            if (!string.IsNullOrEmpty(dto.Category)) listing.Category = dto.Category;
+            if (dto.Category != null) listing.Category = dto.Category.Value;
             if (dto.SpeciesId.HasValue) listing.SpeciesId = dto.SpeciesId.Value;
 
             // Handle image updates

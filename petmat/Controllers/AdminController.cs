@@ -6,6 +6,7 @@ using CoreLayer.Dtos.Doctor;
 using CoreLayer.Dtos.Pharmacy;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 using CoreLayer.Service_Interface.Admin;
 using CoreLayer.Specifications.User;
 using Microsoft.AspNetCore.Authorization;
@@ -247,15 +248,15 @@ namespace petmat.Controllers
             return Ok(result);
         }
 
-
-        /// Get all doctor applications with optional status filter
+        //get all doctor application or get all by status
         [ProducesResponseType(typeof(DoctorApplicationListDto), StatusCodes.Status200OK)]
         [HttpGet("doctor-applications")]
-        public async Task<ActionResult<DoctorApplicationListDto>> GetAllDoctorApplications([FromQuery] string? status = null)
+        public async Task<ActionResult<DoctorApplicationListDto>> GetAllDoctorApplications([FromQuery] ApplicationStatus? status = null)
         {
             var result = await _adminDoctorApplicationManagement.GetAllDoctorApplicationsAsync(status);
             return Ok(result);
         }
+
 
         /// Get doctor application by ID
         [ProducesResponseType(typeof(DoctorApplicationDetailDto), StatusCodes.Status200OK)]
@@ -318,7 +319,7 @@ namespace petmat.Controllers
         /// Get all pharmacy applications with optional status filter
         [ProducesResponseType(typeof(PharmacyApplicationListDto), StatusCodes.Status200OK)]
         [HttpGet("pharmacy-applications")]
-        public async Task<ActionResult<PharmacyApplicationListDto>> GetAllPharmacyApplications([FromQuery] string? status = null)
+        public async Task<ActionResult<PharmacyApplicationListDto>> GetAllPharmacyApplications([FromQuery] ApplicationStatus? status = null)
         {
             var result = await _adminPharmacyApplicationManagement.GetAllPharmacyApplicationsAsync(status);
             return Ok(result);

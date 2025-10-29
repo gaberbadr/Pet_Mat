@@ -29,10 +29,12 @@ namespace CoreLayer.Specifications.Pharmacy
 
         private static Expression<Func<PharmacyListing, bool>> BuildCriteria(string pharmacyId, PharmacyListingFilterParams filterParams)
         {
+            var categoryEnum = filterParams.GetCategoryEnum();
+
             return pl =>
                 pl.PharmacyId == pharmacyId &&
                 (!filterParams.SpeciesId.HasValue || pl.SpeciesId == filterParams.SpeciesId.Value) &&
-                (string.IsNullOrEmpty(filterParams.Category) || pl.Category.ToLower() == filterParams.Category.ToLower()) &&
+                (!categoryEnum.HasValue || pl.Category == categoryEnum.Value) &&
                 (!filterParams.MinPrice.HasValue || pl.Price >= filterParams.MinPrice.Value) &&
                 (!filterParams.MaxPrice.HasValue || pl.Price <= filterParams.MaxPrice.Value) &&
                 (!filterParams.InStock.HasValue || (filterParams.InStock.Value ? pl.Stock > 0 : pl.Stock == 0)) &&
@@ -51,10 +53,11 @@ namespace CoreLayer.Specifications.Pharmacy
 
         private static Expression<Func<PharmacyListing, bool>> BuildCriteria(string pharmacyId, PharmacyListingFilterParams filterParams)
         {
+            var categoryEnum = filterParams.GetCategoryEnum();
             return pl =>
                 pl.PharmacyId == pharmacyId &&
                 (!filterParams.SpeciesId.HasValue || pl.SpeciesId == filterParams.SpeciesId.Value) &&
-                (string.IsNullOrEmpty(filterParams.Category) || pl.Category.ToLower() == filterParams.Category.ToLower()) &&
+                (!categoryEnum.HasValue || pl.Category == categoryEnum.Value) &&
                 (!filterParams.MinPrice.HasValue || pl.Price >= filterParams.MinPrice.Value) &&
                 (!filterParams.MaxPrice.HasValue || pl.Price <= filterParams.MaxPrice.Value) &&
                 (!filterParams.InStock.HasValue || (filterParams.InStock.Value ? pl.Stock > 0 : pl.Stock == 0)) &&
@@ -93,10 +96,11 @@ namespace CoreLayer.Specifications.Pharmacy
 
         private static Expression<Func<PharmacyListing, bool>> BuildCriteria(PharmacyListingFilterParams filterParams)
         {
+            var categoryEnum = filterParams.GetCategoryEnum();
             return pl =>
                 pl.IsActive == true &&
                 (!filterParams.SpeciesId.HasValue || pl.SpeciesId == filterParams.SpeciesId.Value) &&
-                (string.IsNullOrEmpty(filterParams.Category) || pl.Category.ToLower() == filterParams.Category.ToLower()) &&
+                (!categoryEnum.HasValue || pl.Category == categoryEnum.Value) &&
                 (!filterParams.MinPrice.HasValue || pl.Price >= filterParams.MinPrice.Value) &&
                 (!filterParams.MaxPrice.HasValue || pl.Price <= filterParams.MaxPrice.Value) &&
                 (!filterParams.InStock.HasValue || (filterParams.InStock.Value ? pl.Stock > 0 : pl.Stock == 0)) &&
@@ -115,10 +119,11 @@ namespace CoreLayer.Specifications.Pharmacy
 
         private static Expression<Func<PharmacyListing, bool>> BuildCriteria(PharmacyListingFilterParams filterParams)
         {
+            var categoryEnum = filterParams.GetCategoryEnum();
             return pl =>
                 pl.IsActive == true &&
                 (!filterParams.SpeciesId.HasValue || pl.SpeciesId == filterParams.SpeciesId.Value) &&
-                (string.IsNullOrEmpty(filterParams.Category) || pl.Category.ToLower() == filterParams.Category.ToLower()) &&
+                (!categoryEnum.HasValue || pl.Category == categoryEnum.Value) &&
                 (!filterParams.MinPrice.HasValue || pl.Price >= filterParams.MinPrice.Value) &&
                 (!filterParams.MaxPrice.HasValue || pl.Price <= filterParams.MaxPrice.Value) &&
                 (!filterParams.InStock.HasValue || (filterParams.InStock.Value ? pl.Stock > 0 : pl.Stock == 0)) &&

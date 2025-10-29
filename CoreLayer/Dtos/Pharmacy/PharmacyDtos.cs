@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CoreLayer.Enums;
 using Microsoft.AspNetCore.Http;
 
 namespace CoreLayer.Dtos.Pharmacy
@@ -30,6 +31,12 @@ namespace CoreLayer.Dtos.Pharmacy
         public string? Search { get; set; }
         public int PageIndex { get; set; } = 1;
         public int PageSize { get; set; } = 10;
+
+        public PharmacyListingCategory? GetCategoryEnum()
+        {
+            if (string.IsNullOrEmpty(Category)) return null;
+            return Enum.TryParse<PharmacyListingCategory>(Category, true, out var result) ? result : null;
+        }
     }
 
     public class ApplyPharmacyDto
@@ -69,8 +76,7 @@ namespace CoreLayer.Dtos.Pharmacy
     public class ReviewPharmacyApplicationDto
     {
         [Required]
-        [MaxLength(50)]
-        public string Status { get; set; } // "Approved" or "Rejected"
+        public ApplicationStatus Status { get; set; } // "Approved" or "Rejected"
 
         public string? RejectionReason { get; set; }
     }
@@ -148,8 +154,8 @@ namespace CoreLayer.Dtos.Pharmacy
 
         public int? SpeciesId { get; set; }
 
-        [MaxLength(100)]
-        public string? Category { get; set; }
+
+        public PharmacyListingCategory Category { get; set; }
     }
 
     public class UpdatePharmacyListingDto
@@ -169,8 +175,7 @@ namespace CoreLayer.Dtos.Pharmacy
 
         public int? SpeciesId { get; set; }
 
-        [MaxLength(100)]
-        public string? Category { get; set; }
+        public PharmacyListingCategory? Category { get; set; }
     }
 
     public class UpdateListingStockDto
@@ -226,7 +231,7 @@ namespace CoreLayer.Dtos.Pharmacy
     public class UserPharmacyApplicationStatusDto
     {
         public Guid ApplicationId { get; set; }
-        public string Status { get; set; }
+        public ApplicationStatus Status { get; set; }
         public DateTime AppliedAt { get; set; }
         public string? RejectionReason { get; set; }
     }

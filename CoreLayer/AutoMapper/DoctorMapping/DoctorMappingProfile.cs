@@ -17,9 +17,11 @@ namespace CoreLayer.AutoMapper.DoctorMapping
             CreateMap<DoctorProfile, DoctorProfileResponseDto>();
 
             // DoctorApply mappings
-            CreateMap<DoctorApply, DoctorApplicationDetailDto>();
+            CreateMap<DoctorApply, DoctorApplicationDetailDto>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
-            CreateMap<DoctorApply, DoctorApplicationSummaryDto>();
+            CreateMap<DoctorApply, DoctorApplicationSummaryDto>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
         }
     }
 }

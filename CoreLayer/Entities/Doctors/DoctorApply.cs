@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 
 namespace CoreLayer.Entities.Doctors
 {
@@ -38,8 +39,7 @@ namespace CoreLayer.Entities.Doctors
         [MaxLength(500)]
         public string MedicalLicense { get; set; }
 
-        [MaxLength(50)]
-        public string Status { get; set; } = "Pending";
+        public ApplicationStatus Status { get; set; } = ApplicationStatus.Pending;
 
         public DateTime AppliedAt { get; set; } = DateTime.UtcNow;
 

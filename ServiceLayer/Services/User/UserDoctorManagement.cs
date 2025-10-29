@@ -8,6 +8,7 @@ using CoreLayer;
 using CoreLayer.Dtos.Doctor;
 using CoreLayer.Entities.Doctors;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 using CoreLayer.Helper.Documents;
 using CoreLayer.Helper.Pagination;
 using CoreLayer.Service_Interface.User;
@@ -130,7 +131,7 @@ namespace ServiceLayer.Services.User
                 SelfieWithId = selfieWithId,
                 SyndicateCard = syndicateCard,
                 MedicalLicense = medicalLicense,
-                Status = "Pending",
+                Status = ApplicationStatus.Pending,
                 AppliedAt = DateTime.UtcNow
             };
 

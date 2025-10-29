@@ -7,8 +7,10 @@ using AutoMapper;
 using CoreLayer;
 using CoreLayer.Dtos.Doctor;
 using CoreLayer.Dtos.Pharmacy;
+using CoreLayer.Entities.Doctors;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Entities.Pharmacies;
+using CoreLayer.Enums;
 using CoreLayer.Helper.Documents;
 using CoreLayer.Service_Interface.Admin;
 using Microsoft.AspNetCore.Identity;
@@ -38,7 +40,7 @@ namespace ServiceLayer.Services.Admin
         public async Task<PharmacyApplicationListDto> GetPendingPharmacyApplicationsAsync()
         {
             var applications = await _unitOfWork.Repository<PharmacyApply, Guid>()
-                .FindAsync(pa => pa.Status == "Pending");
+                .FindAsync(pa => pa.Status == ApplicationStatus.Pending);
 
             var applicationDtos = new List<PharmacyApplicationSummaryDto>();
 
@@ -57,7 +59,7 @@ namespace ServiceLayer.Services.Admin
                         Address = app.Address,
                         Phone = app.Phone,
                         LicenseNumber = app.LicenseNumber,
-                        Status = app.Status,
+                        Status = app.Status.ToString(),
                         AppliedAt = app.AppliedAt
                     });
                 }
@@ -70,11 +72,12 @@ namespace ServiceLayer.Services.Admin
             };
         }
 
-        public async Task<PharmacyApplicationListDto> GetAllPharmacyApplicationsAsync(string? status = null)
+        public async Task<PharmacyApplicationListDto> GetAllPharmacyApplicationsAsync(ApplicationStatus? status = null)
         {
-            var applications = string.IsNullOrEmpty(status)
-                ? await _unitOfWork.Repository<PharmacyApply, Guid>().GetAllAsync()
-                : await _unitOfWork.Repository<PharmacyApply, Guid>().FindAsync(pa => pa.Status == status);
+            var repo = _unitOfWork.Repository<PharmacyApply, Guid>();
+            var applications = status == null
+                ? await repo.GetAllAsync()
+                : await repo.FindAsync(da => da.Status == status);
 
             var applicationDtos = new List<PharmacyApplicationSummaryDto>();
 
@@ -93,7 +96,7 @@ namespace ServiceLayer.Services.Admin
                         Address = app.Address,
                         Phone = app.Phone,
                         LicenseNumber = app.LicenseNumber,
-                        Status = app.Status,
+                        Status = app.Status.ToString(),
                         AppliedAt = app.AppliedAt
                     });
                 }
@@ -133,7 +136,7 @@ namespace ServiceLayer.Services.Admin
                 OwnerNationalIdBack = DocumentSetting.GetFileUrl(application.OwnerNationalIdBack, "pharmacy-documents", baseUrl),
                 SelfieWithId = DocumentSetting.GetFileUrl(application.SelfieWithId, "pharmacy-documents", baseUrl),
                 SyndicateCard = DocumentSetting.GetFileUrl(application.SyndicateCard, "pharmacy-documents", baseUrl),
-                Status = application.Status,
+                Status = application.Status.ToString(),
                 AppliedAt = application.AppliedAt,
                 RejectionReason = application.RejectionReason,
             };
@@ -145,11 +148,11 @@ namespace ServiceLayer.Services.Admin
             if (application == null)
                 throw new KeyNotFoundException("Application not found");
 
-            if (application.Status != "Pending")
-                throw new InvalidOperationException($"Application already {application.Status.ToLower()}");
+            if (application.Status != ApplicationStatus.Pending)
+                throw new InvalidOperationException($"Application already {application.Status}");
 
             // Validate status
-            if (dto.Status != "Approved" && dto.Status != "Rejected")
+            if (dto.Status != ApplicationStatus.Approved && dto.Status != ApplicationStatus.Rejected)
                 throw new InvalidOperationException("Status must be either 'Approved' or 'Rejected'");
 
             // Get user
@@ -175,7 +178,7 @@ namespace ServiceLayer.Services.Admin
 
             _unitOfWork.Repository<PharmacyApply, Guid>().Update(application);
 
-            if (dto.Status == "Approved")
+            if (dto.Status == ApplicationStatus.Approved)
             {
                 // Create pharmacy profile
                 var profile = new PharmacyProfile
@@ -216,10 +219,10 @@ namespace ServiceLayer.Services.Admin
             return new ApplicationReviewResponseDto
             {
                 Success = true,
-                Message = dto.Status == "Approved"
+                Message = dto.Status == ApplicationStatus.Approved
                     ? "Application approved and pharmacy profile created successfully"
                     : "Application rejected",
-                Status = dto.Status
+                Status = dto.Status.ToString()
             };
         }
     }

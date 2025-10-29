@@ -54,7 +54,13 @@ namespace petmat.ProgramHelper
 
         private static IServiceCollection AddProgramBuiltInServices(this IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    // This allows string enum conversion and makes it case-insensitive
+                    options.JsonSerializerOptions.Converters.Add(
+                        new System.Text.Json.Serialization.JsonStringEnumConverter());
+                });
             return services;
         }
 

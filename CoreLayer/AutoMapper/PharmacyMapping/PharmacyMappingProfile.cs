@@ -19,11 +19,15 @@ namespace CoreLayer.AutoMapper.PharmacyMapping
             CreateMap<PharmacyProfile, PharmacyProfileResponseDto>();
 
             // PharmacyApply mappings
-            CreateMap<PharmacyApply, PharmacyApplicationDetailDto>();
-            CreateMap<PharmacyApply, PharmacyApplicationSummaryDto>();
+            CreateMap<PharmacyApply, PharmacyApplicationDetailDto>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+
+            CreateMap<PharmacyApply, PharmacyApplicationSummaryDto>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
             // PharmacyListing mappings - In-memory mapping (not for ProjectTo)
             CreateMap<PharmacyListing, PharmacyListingResponseDto>()
+            .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.ToString()))
                 .ForMember(dest => dest.ImageUrls, opt => opt.MapFrom(src =>
                     string.IsNullOrEmpty(src.ImageUrls)
                         ? new List<string>()

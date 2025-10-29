@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CoreLayer.Enums;
 using Microsoft.AspNetCore.Http;
 
 namespace CoreLayer.Dtos.Doctor
@@ -17,7 +18,8 @@ namespace CoreLayer.Dtos.Doctor
         public string? Government { get; set; } 
         public string? Search { get; set; } 
         public int PageIndex { get; set; } = 1; 
-        public int PageSize { get; set; } = 10; }
+        public int PageSize { get; set; } = 10;
+    }
 
     public class ApplyDoctorDto
     {
@@ -52,8 +54,7 @@ namespace CoreLayer.Dtos.Doctor
     public class ReviewDoctorApplicationDto
     {
         [Required]
-        [MaxLength(50)]
-        public string Status { get; set; } // "Approved" or "Rejected"
+        public ApplicationStatus Status { get; set; } // "Approved" or "Rejected"
 
         public string? RejectionReason { get; set; }
 
@@ -136,7 +137,7 @@ namespace CoreLayer.Dtos.Doctor
         public string UserFullName { get; set; }
         public string Specialization { get; set; }
         public int ExperienceYears { get; set; }
-        public string Status { get; set; }
+        public ApplicationStatus Status { get; set; }
         public DateTime AppliedAt { get; set; }
     }
 
@@ -154,14 +155,14 @@ namespace CoreLayer.Dtos.Doctor
         public string SelfieWithId { get; set; }
         public string SyndicateCard { get; set; }
         public string MedicalLicense { get; set; }
-        public string Status { get; set; }
+        public ApplicationStatus Status { get; set; }
         public DateTime AppliedAt { get; set; }
         public string? RejectionReason { get; set; }
     }
     public class UserDoctorApplicationStatusDto
     {
         public Guid ApplicationId { get; set; }
-        public string Status { get; set; }
+        public ApplicationStatus Status { get; set; }
         public DateTime AppliedAt { get; set; }
         public string? RejectionReason { get; set; }
     }
@@ -244,7 +245,7 @@ namespace CoreLayer.Dtos.Doctor
     {
         public bool Success { get; set; }
         public string Message { get; set; }
-        public string Status { get; set; }
+        public string? Status { get; set; }
     }
 
     public class DoctorProfileOperationResponseDto

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 
 namespace CoreLayer.Entities.Pharmacies
 {
@@ -33,8 +34,7 @@ namespace CoreLayer.Entities.Pharmacies
 
         public int? SpeciesId { get; set; }
 
-        [MaxLength(100)]
-        public string Category { get; set; }
+        public PharmacyListingCategory Category { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

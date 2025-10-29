@@ -9,6 +9,7 @@ using CoreLayer.Dtos.Doctor;
 using CoreLayer.Dtos.Pharmacy;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Entities.Pharmacies;
+using CoreLayer.Enums;
 using CoreLayer.Helper.Documents;
 using CoreLayer.Helper.Pagination;
 using CoreLayer.Service_Interface.User;
@@ -281,7 +282,7 @@ namespace ServiceLayer.Services.User
                 OwnerNationalIdBack = ownerNationalIdBack,
                 SelfieWithId = selfieWithId,
                 SyndicateCard = syndicateCard,
-                Status = "Pending",
+                Status = ApplicationStatus.Pending,
                 AppliedAt = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow
             };

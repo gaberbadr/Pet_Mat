@@ -8,6 +8,7 @@ using CoreLayer;
 using CoreLayer.Dtos.Doctor;
 using CoreLayer.Entities.Doctors;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 using CoreLayer.Helper.Documents;
 using CoreLayer.Service_Interface.Admin;
 using Microsoft.AspNetCore.Identity;
@@ -40,7 +41,7 @@ namespace ServiceLayer.Services.Admin
         public async Task<DoctorApplicationListDto> GetPendingDoctorApplicationsAsync()
         {
             var applications = await _unitOfWork.Repository<DoctorApply, Guid>()
-                .FindAsync(da => da.Status == "Pending");
+                .FindAsync(da => da.Status == ApplicationStatus.Pending);
 
             var applicationDtos = new List<DoctorApplicationSummaryDto>();
 
@@ -70,11 +71,12 @@ namespace ServiceLayer.Services.Admin
             };
         }
 
-        public async Task<DoctorApplicationListDto> GetAllDoctorApplicationsAsync(string? status = null)
+        public async Task<DoctorApplicationListDto> GetAllDoctorApplicationsAsync(ApplicationStatus? status = null)
         {
-            var applications = string.IsNullOrEmpty(status)
-                ? await _unitOfWork.Repository<DoctorApply, Guid>().GetAllAsync()
-                : await _unitOfWork.Repository<DoctorApply, Guid>().FindAsync(da => da.Status == status);
+            var repo = _unitOfWork.Repository<DoctorApply, Guid>();
+            var applications = status == null
+                ? await repo.GetAllAsync()
+                : await repo.FindAsync(da => da.Status == status);
 
             var applicationDtos = new List<DoctorApplicationSummaryDto>();
 
@@ -138,42 +140,33 @@ namespace ServiceLayer.Services.Admin
 
         public async Task<ApplicationReviewResponseDto> ReviewDoctorApplicationAsync(Guid id, ReviewDoctorApplicationDto dto)
         {
-            var application = await _unitOfWork.Repository<DoctorApply, Guid>().GetAsync(id);
-            if (application == null)
-                throw new KeyNotFoundException("Application not found");
+            var application = await _unitOfWork.Repository<DoctorApply, Guid>().GetAsync(id)
+                ?? throw new KeyNotFoundException("Application not found");
 
-            if (application.Status != "Pending")
-                throw new InvalidOperationException($"Application already {application.Status.ToLower()}");
+            if (application.Status != ApplicationStatus.Pending)
+                throw new InvalidOperationException($"Application already {application.Status}");
 
-            // Validate status
-            if (dto.Status != "Approved" && dto.Status != "Rejected")
-                throw new InvalidOperationException("Status must be either 'Approved' or 'Rejected'");
+            if (dto.Status != ApplicationStatus.Approved && dto.Status != ApplicationStatus.Rejected)
+                throw new InvalidOperationException("Status must be either Approved or Rejected");
 
-            // Get user
-            var user = await _userManager.FindByIdAsync(application.UserId);
-            if (user == null)
-                throw new KeyNotFoundException("User not found");
+            var user = await _userManager.FindByIdAsync(application.UserId)
+                ?? throw new KeyNotFoundException("User not found");
 
-            //Check if user already has any role
             var roles = await _userManager.GetRolesAsync(user);
             if (roles.Any())
             {
-                // Delete this application since the user already has a role
                 _unitOfWork.Repository<DoctorApply, Guid>().Delete(application);
                 await _unitOfWork.CompleteAsync();
-
                 throw new InvalidOperationException("User already has a role and cannot apply for the service.");
             }
 
             // Update application
             application.Status = dto.Status;
             application.RejectionReason = dto.RejectionReason;
-
             _unitOfWork.Repository<DoctorApply, Guid>().Update(application);
 
-            if (dto.Status == "Approved")
+            if (dto.Status == ApplicationStatus.Approved)
             {
-                // Create doctor profile
                 var profile = new DoctorProfile
                 {
                     Id = Guid.NewGuid(),
@@ -198,16 +191,10 @@ namespace ServiceLayer.Services.Admin
 
                 await _unitOfWork.Repository<DoctorProfile, Guid>().AddAsync(profile);
 
-                // Add Doctor role to user
-                if (user != null)
+                if (!await _userManager.IsInRoleAsync(user, "Doctor"))
                 {
-                    var roleExists = await _userManager.IsInRoleAsync(user, "Doctor");
-                    if (!roleExists)
-                    {
-                        await _userManager.AddToRoleAsync(user, "Doctor");
-                        // Invalidate all active tokens immediately
-                        await _userManager.UpdateSecurityStampAsync(user);
-                    }
+                    await _userManager.AddToRoleAsync(user, "Doctor");
+                    await _userManager.UpdateSecurityStampAsync(user);
                 }
             }
 
@@ -216,11 +203,11 @@ namespace ServiceLayer.Services.Admin
             return new ApplicationReviewResponseDto
             {
                 Success = true,
-                Message = dto.Status == "Approved"
+                Message = dto.Status == ApplicationStatus.Approved
                     ? "Application approved and doctor profile created successfully"
                     : "Application rejected",
-                Status = dto.Status
-            };
+                Status = dto.Status.ToString()
+            }; 
         }
 
     }
