@@ -63,7 +63,7 @@ namespace CoreLayer.AutoMapper.AnimalMapping
             CreateMap<ApplicationUser, OwnerDto>()
                 .ForMember(dest => dest.ProfilePicture, opt => opt.MapFrom(src =>
                     !string.IsNullOrEmpty(src.ProfilePicture)
-                        ? DocumentSetting.GetFileUrl(src.ProfilePicture, "users", baseUrl)
+                        ? DocumentSetting.GetFileUrl(src.ProfilePicture, "profiles", baseUrl)
                         : null))
                 .ForMember(dest => dest.City,
                     opt => opt.MapFrom(src => src.Address != null ? src.Address.City : null))

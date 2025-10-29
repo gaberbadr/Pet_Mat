@@ -173,7 +173,7 @@ namespace ServiceLayer.Services.Accessory
                     var oldImages = listing.ImageUrls.Split(',');
                     foreach (var oldImage in oldImages)
                     {
-                        DocumentSetting.Delete(oldImage, "accessories");
+                        DocumentSetting.Delete(oldImage, "accessory-listings");
                     }
                 }
 
