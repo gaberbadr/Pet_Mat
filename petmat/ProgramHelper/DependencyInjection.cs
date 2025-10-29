@@ -167,10 +167,10 @@ namespace petmat.ProgramHelper
             {
                 // Add profiles that don't need configuration
                 config.AddProfile<AdminMappingProfile>();
-                config.AddProfile<UserMappingProfile>();
                 config.AddProfile<DoctorMappingProfile>();
 
-                // Add profile that needs configuration through factory
+                // Add profiles that need configuration through factory
+                config.AddProfile(new UserMappingProfile(configuration));
                 config.AddProfile(new PharmacyMappingProfile(configuration));
                 config.AddProfile(new AccessoryMappingProfile(configuration));
             });

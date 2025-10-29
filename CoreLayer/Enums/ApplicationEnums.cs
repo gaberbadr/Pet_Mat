@@ -6,37 +6,139 @@ using System.Threading.Tasks;
 
 namespace CoreLayer.Enums
 {
-    // ==================== LISTING STATUS ====================
+ // ==================== APPLICATION STATUS ====================
 
-    public enum ListingStatus
-    {
-        Active,
-        Sold,
-        Reserved
-    }
+        public enum ApplicationStatus
+        {
+            Pending,
+            Approved,
+            Rejected
+        }
 
-    // ==================== ACCESSORY CONDITION ====================
+        // ==================== LISTING STATUS ====================
 
-    public enum AccessoryCondition
-    {
-        New,
-        LikeNew,
-        Good,
-        Used
-    }
-    // ==================== ACCESSORY CATEGORY ====================
+        public enum ListingStatus
+        {
+            Active,
+            Sold,
+            Reserved
+        }
 
-    public enum AccessoryCategory
-    {
-        Toys,
-        Clothing,
-        Bedding,
-        Bowls,
-        Leashes,
-        Collars,
-        Carriers,
-        Grooming,
-        Training,
-        Other
-    }
+        // ==================== ORDER STATUS ====================
+
+        public enum OrderStatus
+        {
+            Pending,
+            Processing,
+            Shipped,
+            Delivered,
+            Cancelled,
+            Refunded
+        }
+
+
+        // ==================== ANIMAL GENDER ====================
+
+        public enum Gender
+        {
+            Male,
+            Female,
+            Unknown
+        }
+
+        // ==================== ANIMAL SIZE ====================
+
+        public enum AnimalSize
+        {
+            Small,
+            Medium,
+            Large,
+            ExtraLarge
+        }
+
+        // ==================== ANIMAL LISTING TYPE ====================
+
+        public enum AnimalListingType
+        {
+            Sale,
+            Adoption,
+            Breeding,
+            Rehoming
+        }
+
+        // ==================== ACCESSORY CONDITION ====================
+
+        public enum AccessoryCondition
+        {
+            New,
+            LikeNew,
+            Good,
+            Used
+        }
+
+        // ==================== ACCESSORY CATEGORY ====================
+
+        public enum AccessoryCategory
+        {
+            Toys,
+            Clothing,
+            Bedding,
+            Bowls,
+            Leashes,
+            Collars,
+            Carriers,
+            Grooming,
+            Training,
+            Other
+        }
+
+        // ==================== MESSAGE TYPE ====================
+
+        public enum MessageType
+        {
+            Text,
+            Image,
+            Video,
+            Document,
+            Location
+        }
+
+        // ==================== MESSAGE CONTEXT TYPE ====================
+
+        public enum MessageContextType
+        {
+            General,
+            AnimalListing,
+            AccessoryListing,
+            PharmacyStore,
+            DoctorConsultation
+
+        }
+
+        // ==================== POST REACTION TYPE ====================
+
+        public enum ReactionType
+        {
+            Like,
+            Love,
+            Care,
+            Funny,
+            Wow,
+            Sad,
+            Angry
+        }
+
+        // ==================== PHARMACY LISTING CATEGORY ====================
+
+        public enum PharmacyListingCategory
+        {
+            Medication,
+            Supplements,
+            Vaccines,
+            Antiparasitics,
+            FirstAid,
+            Nutrition,
+            Hygiene,
+            Other
+        }
 }

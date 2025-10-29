@@ -33,7 +33,7 @@ namespace CoreLayer.Dtos.User
 
         public string? Description { get; set; }
 
-        public IFormFile? Image { get; set; }
+        public List<IFormFile>? Image { get; set; }
 
         public string? ExtraPropertiesJson { get; set; }
     }
@@ -60,7 +60,7 @@ namespace CoreLayer.Dtos.User
 
         public string? Description { get; set; }
 
-        public IFormFile? Image { get; set; }
+        public List<IFormFile>? Image { get; set; }
 
         public string? ExtraPropertiesJson { get; set; }
     }
@@ -110,7 +110,7 @@ namespace CoreLayer.Dtos.User
         public string Age { get; set; }
         public string Size { get; set; }
         public string Gender { get; set; }
-        public string ImageUrl { get; set; }
+        public List<string>? ImageUrl { get; set; }
         public string Description { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -139,7 +139,7 @@ namespace CoreLayer.Dtos.User
         public string Age { get; set; }
         public string Size { get; set; }
         public string Gender { get; set; }
-        public string ImageUrl { get; set; }
+        public List<string>? ImageUrl { get; set; }
         public string Description { get; set; }
         public SpeciesDto Species { get; set; }
         public string SubSpeciesName { get; set; }

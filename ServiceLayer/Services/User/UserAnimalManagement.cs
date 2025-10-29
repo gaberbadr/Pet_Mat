@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -41,8 +42,12 @@ namespace ServiceLayer.Services.User
         public async Task<AnimalListDto> GetMyAnimalsAsync(string userId)
         {
             var spec = new AnimalWithDetailsByOwnerSpecification(userId);
-            var animalDtos = await _unitOfWork.Repository<Animal, int>()
-                .GetAllWithProjectionAsync<AnimalDto>(spec, _mapper.ConfigurationProvider);
+            // Load entities with navigation properties (NOT using ProjectTo)
+            var animals = await _unitOfWork.Repository<Animal, int>()
+                .GetAllWithSpecficationAsync(spec);
+
+            // Map in-memory - this allows complex transformations
+            var animalDtos = _mapper.Map<IEnumerable<AnimalDto>>(animals);
 
             return new AnimalListDto
             {
@@ -74,12 +79,17 @@ namespace ServiceLayer.Services.User
                     throw new KeyNotFoundException("Color not found or inactive");
             }
 
-            // Handle image upload
-            string imageUrl = null;
-            if (dto.Image != null)
+
+
+            // Handle image uploads
+            var imageUrls = new List<string>();
+            if (dto.Image != null && dto.Image.Any())
             {
-                var fileName = DocumentSetting.Upload(dto.Image, "animals");
-                imageUrl = $"animals/{fileName}";
+                foreach (var image in dto.Image)
+                {
+                    var fileName = DocumentSetting.Upload(image, "animals");
+                    imageUrls.Add(fileName);
+                }
             }
 
             // Create animal
@@ -93,7 +103,7 @@ namespace ServiceLayer.Services.User
                 Size = dto.Size,
                 Gender = dto.Gender,
                 Description = dto.Description,
-                ImageUrl = imageUrl,
+                ImageUrl = string.Join(",", imageUrls),
                 OwnerId = userId,
                 ExtraPropertiesJson = dto.ExtraPropertiesJson,
                 IsActive = true,
@@ -147,14 +157,27 @@ namespace ServiceLayer.Services.User
                 animal.ColorId = dto.ColorId;
             }
 
-            // Handle image update
-            if (dto.Image != null)
+            // Handle image updates
+            if (dto.Image != null && dto.Image.Any())
             {
+                // Delete old images
                 if (!string.IsNullOrEmpty(animal.ImageUrl))
                 {
-                    DocumentSetting.Delete(animal.ImageUrl, "animals");
+                    var oldImages = animal.ImageUrl.Split(',');
+                    foreach (var oldImage in oldImages)
+                    {
+                        DocumentSetting.Delete(oldImage, "animals");
+                    }
                 }
-                animal.ImageUrl = DocumentSetting.Upload(dto.Image, "animals");
+
+                // Upload new images
+                var imageUrls = new List<string>();
+                foreach (var image in dto.Image)
+                {
+                    var fileName = DocumentSetting.Upload(image, "animals");
+                    imageUrls.Add(fileName);
+                }
+                animal.ImageUrl = string.Join(",", imageUrls);
             }
 
             // Update other fields
@@ -197,6 +220,16 @@ namespace ServiceLayer.Services.User
                     "Please delete the listings first.");
             }
 
+            // Delete images
+            if (!string.IsNullOrEmpty(animal.ImageUrl))
+            {
+                var images = animal.ImageUrl.Split(',');
+                foreach (var image in images)
+                {
+                    DocumentSetting.Delete(image, "animals");
+                }
+            }
+
             // Soft delete
             animal.IsActive = false;
             _unitOfWork.Repository<Animal, int>().Update(animal);
@@ -223,8 +256,12 @@ namespace ServiceLayer.Services.User
             var spec = new AnimalListingFilterSpecification(filterParams);
             var countSpec = new AnimalListingCountSpecification(filterParams);
 
-            var listingDtos = await _unitOfWork.Repository<AnimalListing, int>()
-                .GetAllWithProjectionAsync<AnimalListingResponseDto>(spec, _mapper.ConfigurationProvider);
+            // Load entities with navigation properties (NOT using ProjectTo)
+            var animals = await _unitOfWork.Repository<AnimalListing, int>()
+                .GetAllWithSpecficationAsync(spec);
+
+            // Map in-memory - this allows complex transformations
+            var listingDtos = _mapper.Map<IEnumerable<AnimalListingResponseDto>>(animals);
 
             var totalCount = await _unitOfWork.Repository<AnimalListing, int>()
                 .GetCountAsync(countSpec);
@@ -252,8 +289,13 @@ namespace ServiceLayer.Services.User
         public async Task<AnimalListingListDto> GetMyListingsAsync(string userId)
         {
             var spec = new AnimalListingWithDetailsByOwnerSpecification(userId);
-            var listingDtos = await _unitOfWork.Repository<AnimalListing, int>()
-                .GetAllWithProjectionAsync<AnimalListingResponseDto>(spec, _mapper.ConfigurationProvider);
+
+            // Load entities with navigation properties (NOT using ProjectTo)
+            var animals = await _unitOfWork.Repository<AnimalListing, int>()
+                .GetAllWithSpecficationAsync(spec);
+
+            // Map in-memory - this allows complex transformations
+            var listingDtos = _mapper.Map<IEnumerable<AnimalListingResponseDto>>(animals);
 
             return new AnimalListingListDto
             {

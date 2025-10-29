@@ -10,4 +10,10 @@ namespace CoreLayer.Dtos
     {
         public string Message { get; set; }
     }
+
+    public class EnumResponseDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
 }
