@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Dtos.User;
 using CoreLayer.Entities.Animals;
+using CoreLayer.Enums;
 
 
 namespace CoreLayer.Specifications.User
@@ -52,11 +53,12 @@ namespace CoreLayer.Specifications.User
 
         private static Expression<Func<AnimalListing, bool>> BuildCriteria(AnimalListingFilterParams filterParams)
         {
+            var typeEnum = filterParams.GetAnimalListingTypeEnum();
+
             return al =>
-       al.Status == "Active" && al.IsActive == true &&
+        al.IsActive == true &&
        (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
-       (string.IsNullOrEmpty(filterParams.Type) || al.Type == filterParams.Type) &&
-       (string.IsNullOrEmpty(filterParams.Status) || al.Status == filterParams.Status) &&
+       (!typeEnum.HasValue || al.Type == typeEnum.Value) &&
        (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
        (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
 
@@ -81,15 +83,15 @@ namespace CoreLayer.Specifications.User
         }
 
         private static Expression<Func<AnimalListing, bool>> BuildCriteria(AnimalListingFilterParams filterParams)
-        {
+        {   
+            var typeEnum = filterParams.GetAnimalListingTypeEnum();
 
             return al =>
-                 al.Status == "Active" && al.IsActive == true &&
-                 (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
-                 (string.IsNullOrEmpty(filterParams.Type) || al.Type == filterParams.Type) &&
-                 (string.IsNullOrEmpty(filterParams.Status) || al.Status == filterParams.Status) &&
-                 (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
-                 (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
+         al.IsActive == true &&
+       (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
+       (!typeEnum.HasValue || al.Type == typeEnum.Value) &&
+       (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
+       (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
 
                  // City and Government filters
                  (string.IsNullOrEmpty(filterParams.City) || al.Owner.Address.City.ToLower() == filterParams.City.ToLower()) &&
@@ -106,7 +108,7 @@ namespace CoreLayer.Specifications.User
     public class AnimalListingByIdSpecification : BaseSpecifications<AnimalListing, int>
     {
         public AnimalListingByIdSpecification(int id)
-            : base(al => al.Id == id && al.IsActive == true && al.Status == "Active")
+            : base(al => al.Id == id && al.IsActive == true)
         {
             Includes.Add(al => al.Animal);
             Includes.Add(al => al.Animal.Species);

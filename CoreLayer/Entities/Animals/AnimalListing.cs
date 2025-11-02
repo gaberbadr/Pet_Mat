@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Entities.Orders;
+using CoreLayer.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -24,11 +25,9 @@ namespace CoreLayer.Entities.Animals
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
 
-        [MaxLength(50)]
-        public string Type { get; set; }
+        public AnimalListingType Type { get; set; }
 
-        [MaxLength(50)]
-        public string Status { get; set; } = "Active";
+        public ListingStatus Status { get; set; } = ListingStatus.Active;
 
         public int AnimalId { get; set; }
 

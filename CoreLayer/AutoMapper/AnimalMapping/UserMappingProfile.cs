@@ -23,6 +23,8 @@ namespace CoreLayer.AutoMapper.AnimalMapping
 
             // Animal mappings
             CreateMap<Animal, AnimalDto>()
+                .ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender.ToString()))
+                .ForMember(dest => dest.Size, opt => opt.MapFrom(src => src.Size.ToString()))
                 .ForMember(dest => dest.SubSpeciesName,
                     opt => opt.MapFrom(src => src.SubSpecies != null ? src.SubSpecies.Name : null))
                 .ForMember(dest => dest.ColorName,
@@ -36,6 +38,8 @@ namespace CoreLayer.AutoMapper.AnimalMapping
                             .ToList()));
 
             CreateMap<Animal, AnimalResponseDto>()
+                .ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender.ToString()))
+                .ForMember(dest => dest.Size, opt => opt.MapFrom(src => src.Size.ToString()))
                 .ForMember(dest => dest.SubSpeciesName,
                     opt => opt.MapFrom(src => src.SubSpecies != null ? src.SubSpecies.Name : null))
                 .ForMember(dest => dest.ColorName,
@@ -72,8 +76,9 @@ namespace CoreLayer.AutoMapper.AnimalMapping
 
             // AnimalListing mappings
             CreateMap<AnimalListing, AnimalListingResponseDto>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
                 .ForMember(dest => dest.Animal, opt => opt.MapFrom(src => src.Animal))
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.Owner, opt => opt.MapFrom(src => src.Owner));
         }
     }

@@ -34,7 +34,7 @@ namespace CoreLayer.Specifications.Accessory
             var conditionEnum = filterParams.GetConditionEnum();
 
             return al =>
-                al.Status == ListingStatus.Active && al.IsActive == true &&
+                al.IsActive == true &&
                 (!filterParams.SpeciesId.HasValue || al.SpeciesId == filterParams.SpeciesId.Value) &&
                 (!categoryEnum.HasValue || al.Category == categoryEnum.Value) &&
                 (!conditionEnum.HasValue || al.Condition == conditionEnum.Value) &&
@@ -62,7 +62,7 @@ namespace CoreLayer.Specifications.Accessory
             var conditionEnum = filterParams.GetConditionEnum();
 
             return al =>
-                al.Status == ListingStatus.Active && al.IsActive == true &&
+                al.IsActive == true &&
                 (!filterParams.SpeciesId.HasValue || al.SpeciesId == filterParams.SpeciesId.Value) &&
                 (!categoryEnum.HasValue || al.Category == categoryEnum.Value) &&
                 (!conditionEnum.HasValue || al.Condition == conditionEnum.Value) &&
@@ -79,7 +79,7 @@ namespace CoreLayer.Specifications.Accessory
     public class AccessoryListingByIdSpecification : BaseSpecifications<AccessoryListing, int>
     {
         public AccessoryListingByIdSpecification(int id)
-            : base(al => al.Id == id && al.IsActive == true && al.Status == ListingStatus.Active)
+            : base(al => al.Id == id && al.IsActive == true)
         {
             Includes.Add(al => al.Owner);
             Includes.Add(al => al.Owner.Address);

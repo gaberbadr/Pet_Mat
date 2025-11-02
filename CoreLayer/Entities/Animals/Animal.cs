@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 
 namespace CoreLayer.Entities.Animals
 {
@@ -24,11 +25,9 @@ namespace CoreLayer.Entities.Animals
         [MaxLength(50)]
         public string Age { get; set; }
 
-        [MaxLength(50)]
-        public string Size { get; set; }
+        public AnimalSize Size { get; set; }
 
-        [MaxLength(20)]
-        public string Gender { get; set; }
+        public Gender Gender { get; set; }
 
         [Required]
         public string OwnerId { get; set; }

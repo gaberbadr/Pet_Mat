@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CoreLayer.Enums;
 using Microsoft.AspNetCore.Http;
 
 namespace CoreLayer.Dtos.User
@@ -25,11 +26,10 @@ namespace CoreLayer.Dtos.User
         [MaxLength(50)]
         public string? Age { get; set; }
 
-        [MaxLength(50)]
-        public string? Size { get; set; }
-
-        [MaxLength(20)]
-        public string? Gender { get; set; }
+        [Required]
+        public AnimalSize Size { get; set; }
+        [Required]
+        public Gender Gender { get; set; }
 
         public string? Description { get; set; }
 
@@ -52,11 +52,9 @@ namespace CoreLayer.Dtos.User
         [MaxLength(50)]
         public string? Age { get; set; }
 
-        [MaxLength(50)]
-        public string? Size { get; set; }
+        public AnimalSize? Size { get; set; }
 
-        [MaxLength(20)]
-        public string? Gender { get; set; }
+        public Gender? Gender { get; set; }
 
         public string? Description { get; set; }
 
@@ -78,8 +76,7 @@ namespace CoreLayer.Dtos.User
         public decimal Price { get; set; }
 
         [Required]
-        [MaxLength(50)]
-        public string Type { get; set; }
+        public AnimalListingType? Type { get; set; }
 
         [Required]
         public int AnimalId { get; set; }
@@ -93,12 +90,31 @@ namespace CoreLayer.Dtos.User
         public int PageSize { get; set; } = 10;
         public int? SpeciesId { get; set; }
         public string? Type { get; set; }
-        public string? Status { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
         public string? Search { get; set; }
         public string? City { get; set; }
         public string? Government { get; set; }
+
+        public AnimalListingType? GetAnimalListingTypeEnum()
+        { 
+            // Return null if Type is null or whitespace
+            if (string.IsNullOrWhiteSpace(Type))
+                return null;
+
+            // Return null if parsing fails (instead of returning a nullable with no value)
+            if (Enum.TryParse<AnimalListingType>(Type, true, out var result))
+                return result;
+
+            return null; 
+        }
+
+    }
+
+    public class UpdateListingStatusDto
+    {
+        [Required]
+        public ListingStatus NewStatus { get; set; }
     }
 
     // ==================== OUTPUT DTOs ====================
@@ -108,8 +124,8 @@ namespace CoreLayer.Dtos.User
         public int Id { get; set; }
         public string PetName { get; set; }
         public string Age { get; set; }
-        public string Size { get; set; }
-        public string Gender { get; set; }
+        public AnimalSize Size { get; set; }
+        public Gender Gender { get; set; }
         public List<string>? ImageUrl { get; set; }
         public string Description { get; set; }
         public bool IsActive { get; set; }
@@ -125,20 +141,15 @@ namespace CoreLayer.Dtos.User
         public int Count { get; set; }
         public IEnumerable<AnimalDto> Data { get; set; }
     }
-    public class UpdateListingStatusDto
-    {
-        [Required]
-        [MaxLength(50)]
-        public string NewStatus { get; set; }
-    }
+
 
     public class AnimalDto
     {
         public int Id { get; set; }
         public string PetName { get; set; }
         public string Age { get; set; }
-        public string Size { get; set; }
-        public string Gender { get; set; }
+        public AnimalSize Size { get; set; }
+        public Gender Gender { get; set; }
         public List<string>? ImageUrl { get; set; }
         public string Description { get; set; }
         public SpeciesDto Species { get; set; }
@@ -168,8 +179,8 @@ namespace CoreLayer.Dtos.User
         public string Title { get; set; }
         public string Description { get; set; }
         public decimal Price { get; set; }
-        public string Type { get; set; }
-        public string Status { get; set; }
+        public AnimalListingType Type { get; set; }
+        public ListingStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public AnimalDto Animal { get; set; }
         public OwnerDto Owner { get; set; }

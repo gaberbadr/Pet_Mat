@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Dtos.User;
+using CoreLayer.Enums;
 using CoreLayer.Helper.Pagination;
 
 namespace CoreLayer.Service_Interface.User
@@ -35,7 +36,7 @@ namespace CoreLayer.Service_Interface.User
 
         Task<ListingOperationResponseDto> AddAnimalListingAsync(AddAnimalListingDto dto, string userId);
 
-        Task<ListingOperationResponseDto> UpdateListingStatusAsync(int listingId, string userId, string newStatus);
+        Task<ListingOperationResponseDto> UpdateListingStatusAsync(int listingId, string userId, ListingStatus newStatus);
         Task<ListingOperationResponseDto> DeleteAnimalListingAsync(int id, string userId);
 
         // ==================== SPECIES INFO ====================

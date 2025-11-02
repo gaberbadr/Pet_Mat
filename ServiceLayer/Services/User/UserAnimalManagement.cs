@@ -9,12 +9,14 @@ using CoreLayer;
 using CoreLayer.Dtos.User;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 using CoreLayer.Helper.Documents;
 using CoreLayer.Helper.Pagination;
 using CoreLayer.Service_Interface.User;
 using CoreLayer.Specifications.User;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace ServiceLayer.Services.User
 {
@@ -183,8 +185,8 @@ namespace ServiceLayer.Services.User
             // Update other fields
             if (!string.IsNullOrEmpty(dto.PetName)) animal.PetName = dto.PetName;
             if (!string.IsNullOrEmpty(dto.Age)) animal.Age = dto.Age;
-            if (!string.IsNullOrEmpty(dto.Size)) animal.Size = dto.Size;
-            if (!string.IsNullOrEmpty(dto.Gender)) animal.Gender = dto.Gender;
+            if (dto.Size.HasValue) animal.Size = dto.Size.Value;
+            if (dto.Gender.HasValue) animal.Gender = dto.Gender.Value;
             if (!string.IsNullOrEmpty(dto.Description)) animal.Description = dto.Description;
             if (!string.IsNullOrEmpty(dto.ExtraPropertiesJson)) animal.ExtraPropertiesJson = dto.ExtraPropertiesJson;
 
@@ -320,11 +322,11 @@ namespace ServiceLayer.Services.User
                 Title = dto.Title,
                 Description = dto.Description,
                 Price = dto.Price,
-                Type = dto.Type,
+                Type = dto.Type.Value,
                 AnimalId = dto.AnimalId,
                 OwnerId = userId,
                 ExtraPropertiesJson = dto.ExtraPropertiesJson,
-                Status = "Active",
+                Status = ListingStatus.Active,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -340,7 +342,7 @@ namespace ServiceLayer.Services.User
             };
         }
 
-        public async Task<ListingOperationResponseDto> UpdateListingStatusAsync(int listingId, string userId, string newStatus)
+        public async Task<ListingOperationResponseDto> UpdateListingStatusAsync(int listingId, string userId, ListingStatus newStatus)
         {
             var listing = await _unitOfWork.Repository<AnimalListing, int>().GetAsync(listingId);
             if (listing == null)
@@ -350,7 +352,7 @@ namespace ServiceLayer.Services.User
                 throw new UnauthorizedAccessException("You don't have permission to update this listing");
 
             // Check if status is already the same
-            if (string.Equals(listing.Status, newStatus, StringComparison.OrdinalIgnoreCase))
+            if (listing.Status == newStatus)
             {
                 return new ListingOperationResponseDto
                 {

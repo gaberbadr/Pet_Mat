@@ -213,6 +213,10 @@ namespace petmat.Controllers
             {
                 return NotFound(new ApiErrorResponse(404, ex.Message));
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(403, new ApiErrorResponse(403, ex.Message));
