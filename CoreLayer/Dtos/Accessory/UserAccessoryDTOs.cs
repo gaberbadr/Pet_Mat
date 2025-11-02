@@ -73,6 +73,7 @@ namespace CoreLayer.Dtos.Accessory
         public string? Category { get; set; }
         public string? Condition { get; set; }
 
+        public string? status { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
         public string? Search { get; set; }
@@ -91,6 +92,13 @@ namespace CoreLayer.Dtos.Accessory
             if (string.IsNullOrEmpty(Condition)) return null;
             return Enum.TryParse<AccessoryCondition>(Condition, true, out var result) ? result : null;
         }
+
+        public ListingStatus? GetListingStatusEnum()
+        {
+            if (string.IsNullOrEmpty(status)) return null;
+            return Enum.TryParse<ListingStatus>(status, true, out var result) ? result : null;
+        }
+
     }
 
     // ==================== OUTPUT DTOs ====================

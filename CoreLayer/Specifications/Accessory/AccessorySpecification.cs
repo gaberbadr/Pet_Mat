@@ -32,12 +32,14 @@ namespace CoreLayer.Specifications.Accessory
         {
             var categoryEnum = filterParams.GetCategoryEnum();
             var conditionEnum = filterParams.GetConditionEnum();
+            var statusEnum = filterParams.GetListingStatusEnum();
 
             return al =>
                 al.IsActive == true &&
                 (!filterParams.SpeciesId.HasValue || al.SpeciesId == filterParams.SpeciesId.Value) &&
                 (!categoryEnum.HasValue || al.Category == categoryEnum.Value) &&
                 (!conditionEnum.HasValue || al.Condition == conditionEnum.Value) &&
+                (!statusEnum.HasValue || al.Status == statusEnum.Value) &&
                 (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
                 (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
                 (string.IsNullOrEmpty(filterParams.City) || al.Owner.Address.City.ToLower() == filterParams.City.ToLower()) &&
@@ -60,12 +62,14 @@ namespace CoreLayer.Specifications.Accessory
         {
             var categoryEnum = filterParams.GetCategoryEnum();
             var conditionEnum = filterParams.GetConditionEnum();
+            var statusEnum = filterParams.GetListingStatusEnum();
 
             return al =>
                 al.IsActive == true &&
                 (!filterParams.SpeciesId.HasValue || al.SpeciesId == filterParams.SpeciesId.Value) &&
                 (!categoryEnum.HasValue || al.Category == categoryEnum.Value) &&
                 (!conditionEnum.HasValue || al.Condition == conditionEnum.Value) &&
+                (!statusEnum.HasValue || al.Status == statusEnum.Value) &&
                 (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
                 (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
                 (string.IsNullOrEmpty(filterParams.City) || al.Owner.Address.City.ToLower() == filterParams.City.ToLower()) &&

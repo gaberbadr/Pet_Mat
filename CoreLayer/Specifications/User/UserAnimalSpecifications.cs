@@ -54,23 +54,25 @@ namespace CoreLayer.Specifications.User
         private static Expression<Func<AnimalListing, bool>> BuildCriteria(AnimalListingFilterParams filterParams)
         {
             var typeEnum = filterParams.GetAnimalListingTypeEnum();
+            var statusEnum = filterParams.GetListingStatusEnum();
 
             return al =>
-        al.IsActive == true &&
+         al.IsActive == true &&
        (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
        (!typeEnum.HasValue || al.Type == typeEnum.Value) &&
+       (!statusEnum.HasValue || al.Status == statusEnum.Value) &&
        (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
        (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
 
-       // City and Government
-       (string.IsNullOrEmpty(filterParams.City) || al.Owner.Address.City.ToLower() == filterParams.City.ToLower()) &&
-       (string.IsNullOrEmpty(filterParams.Government) || al.Owner.Address.Government.ToLower() == filterParams.Government.ToLower()) &&
+                 // City and Government filters
+                 (string.IsNullOrEmpty(filterParams.City) || al.Owner.Address.City.ToLower() == filterParams.City.ToLower()) &&
+                 (string.IsNullOrEmpty(filterParams.Government) || al.Owner.Address.Government.ToLower() == filterParams.Government.ToLower()) &&
 
-       // Search filter
-       (string.IsNullOrEmpty(filterParams.Search) ||
-           al.Title.ToLower().Contains(filterParams.Search.ToLower()) ||
-           al.Description.ToLower().Contains(filterParams.Search.ToLower()) ||
-           al.Animal.PetName.ToLower().Contains(filterParams.Search.ToLower()));
+                 // Search filter
+                 (string.IsNullOrEmpty(filterParams.Search) ||
+                     al.Title.ToLower().Contains(filterParams.Search.ToLower()) ||
+                     al.Description.ToLower().Contains(filterParams.Search.ToLower()) ||
+                     al.Animal.PetName.ToLower().Contains(filterParams.Search.ToLower()));
         }
     }
 
@@ -85,11 +87,13 @@ namespace CoreLayer.Specifications.User
         private static Expression<Func<AnimalListing, bool>> BuildCriteria(AnimalListingFilterParams filterParams)
         {   
             var typeEnum = filterParams.GetAnimalListingTypeEnum();
+            var statusEnum = filterParams.GetListingStatusEnum();
 
             return al =>
          al.IsActive == true &&
        (!filterParams.SpeciesId.HasValue || al.Animal.SpeciesId == filterParams.SpeciesId.Value) &&
        (!typeEnum.HasValue || al.Type == typeEnum.Value) &&
+       (!statusEnum.HasValue || al.Status == statusEnum.Value) &&
        (!filterParams.MinPrice.HasValue || al.Price >= filterParams.MinPrice.Value) &&
        (!filterParams.MaxPrice.HasValue || al.Price <= filterParams.MaxPrice.Value) &&
 

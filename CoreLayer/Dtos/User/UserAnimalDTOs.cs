@@ -90,6 +90,7 @@ namespace CoreLayer.Dtos.User
         public int PageSize { get; set; } = 10;
         public int? SpeciesId { get; set; }
         public string? Type { get; set; }
+        public string? Status { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
         public string? Search { get; set; }
@@ -107,6 +108,19 @@ namespace CoreLayer.Dtos.User
                 return result;
 
             return null; 
+        }
+
+        public ListingStatus? GetListingStatusEnum()
+        {
+            // Return null if status is null or whitespace
+            if (string.IsNullOrWhiteSpace(Status))
+                return null;
+
+            // Return null if parsing fails (instead of returning a nullable with no value)
+            if (Enum.TryParse<ListingStatus>(Status, true, out var result))
+                return result;
+
+            return null;
         }
 
     }
