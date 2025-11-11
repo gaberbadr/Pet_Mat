@@ -282,7 +282,7 @@ namespace petmat.Controllers
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
         [HttpPost("doctor-applications/{id}/review")]
         public async Task<ActionResult<ApplicationReviewResponseDto>> ReviewDoctorApplication(
-        Guid id, [FromBody] ReviewDoctorApplicationDto dto)
+        Guid id, [FromForm] ReviewDoctorApplicationDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(new ApiValidationErrorResponse());
@@ -350,7 +350,7 @@ namespace petmat.Controllers
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
         [HttpPost("pharmacy-applications/{id}/review")]
         public async Task<ActionResult<ApplicationReviewResponseDto>> ReviewPharmacyApplication(
-            Guid id, [FromBody] ReviewPharmacyApplicationDto dto)
+            Guid id, [FromForm] ReviewPharmacyApplicationDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(new ApiValidationErrorResponse());

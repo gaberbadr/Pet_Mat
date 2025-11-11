@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="wwwroot\files\accessory-listings\" />
     <Folder Include="wwwroot\files\animals\" />
     <Folder Include="wwwroot\files\documents\" />
     <Folder Include="wwwroot\files\images\" />

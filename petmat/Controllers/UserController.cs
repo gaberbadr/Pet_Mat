@@ -198,7 +198,7 @@ namespace petmat.Controllers
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
         [HttpPost("listing")]
-        public async Task<ActionResult<ListingOperationResponseDto>> AddAnimalListing([FromBody] AddAnimalListingDto dto)
+        public async Task<ActionResult<ListingOperationResponseDto>> AddAnimalListing([FromForm] AddAnimalListingDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(new ApiValidationErrorResponse());
@@ -229,7 +229,7 @@ namespace petmat.Controllers
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
         [HttpPut("listing/{id}/status")]
-        public async Task<ActionResult<ListingOperationResponseDto>> UpdateListingStatus(int id, [FromBody] UpdateListingStatusDto dto)
+        public async Task<ActionResult<ListingOperationResponseDto>> UpdateListingStatus(int id, [FromForm] UpdateListingStatusDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(new ApiValidationErrorResponse());
@@ -785,7 +785,7 @@ namespace petmat.Controllers
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
         [HttpPut("accessory-listing/{id}/status")]
-        public async Task<ActionResult<AccessoryOperationResponseDto>> UpdateAccessoryListingStatus(int id, [FromBody] UpdateAccessoryListingStatusDto dto)
+        public async Task<ActionResult<AccessoryOperationResponseDto>> UpdateAccessoryListingStatus(int id, [FromForm] UpdateAccessoryListingStatusDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(new ApiValidationErrorResponse());

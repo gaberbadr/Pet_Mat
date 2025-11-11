@@ -208,8 +208,6 @@ namespace ServiceLayer.Services.Admin
                     if (!roleExists)
                     {
                         await _userManager.AddToRoleAsync(user, "Pharmacy");
-                        // Invalidate all active tokens immediately
-                        await _userManager.UpdateSecurityStampAsync(user);
                     }
                 }
             }

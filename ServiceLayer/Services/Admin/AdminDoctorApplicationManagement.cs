@@ -194,7 +194,6 @@ namespace ServiceLayer.Services.Admin
                 if (!await _userManager.IsInRoleAsync(user, "Doctor"))
                 {
                     await _userManager.AddToRoleAsync(user, "Doctor");
-                    await _userManager.UpdateSecurityStampAsync(user);
                 }
             }
 
