@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using CoreLayer.Enums;
 using Microsoft.AspNetCore.Http;
 
-namespace CoreLayer.Dtos.User
+namespace CoreLayer.Dtos.Animals
 {
     // ==================== INPUT DTOs ====================
 

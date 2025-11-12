@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using CoreLayer.Dtos.Accessory;
-using CoreLayer.Dtos.User;
+using CoreLayer.Dtos.Animals;
 using CoreLayer.Entities.Accessories;
 using CoreLayer.Helper.Documents;
 using Microsoft.Extensions.Configuration;

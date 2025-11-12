@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using CoreLayer;
-using CoreLayer.Dtos.User;
+using CoreLayer.Dtos.Animals;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Enums;
@@ -18,7 +18,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-namespace ServiceLayer.Services.User
+namespace ServiceLayer.Services.Animals
 {
     public class UserAnimalManagement : IUserAnimalManagement
     {
@@ -105,7 +105,7 @@ namespace ServiceLayer.Services.User
                 Size = dto.Size,
                 Gender = dto.Gender,
                 Description = dto.Description,
-                ImageUrl = string.Join(",", imageUrls),
+                ImageUrl = string.Join(",", imageUrls),//join image urls with comma
                 OwnerId = userId,
                 ExtraPropertiesJson = dto.ExtraPropertiesJson,
                 IsActive = true,
@@ -316,6 +316,13 @@ namespace ServiceLayer.Services.User
             // Verify animal belongs to the user
             if (animal.OwnerId != userId)
                 throw new UnauthorizedAccessException("You can only create listings for your own animals");
+
+            // Check if animal already has a listing (active or not)
+            var existingListing = await _unitOfWork.Repository<AnimalListing, int>()
+                .FindAsync(l => l.AnimalId == dto.AnimalId && l.IsActive == true);
+
+            if (existingListing.Any())
+                throw new InvalidOperationException("This animal already has an active listing. Please update or delete it first.");
 
             var listing = new AnimalListing
             {

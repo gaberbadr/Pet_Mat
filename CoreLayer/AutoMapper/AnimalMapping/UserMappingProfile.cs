@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
-using CoreLayer.Dtos.User;
+using CoreLayer.Dtos.Animals;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Helper.Documents;

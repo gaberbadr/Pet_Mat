@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Threading.RateLimiting;
 using CoreLayer;
+using CoreLayer.AutoMapper.AdminMapping;
 using CoreLayer.AutoMapper.AnimalMapping;
 using CoreLayer.AutoMapper.DoctorMapping;
 using CoreLayer.AutoMapper.PharmacyMapping;
@@ -24,6 +25,7 @@ using RepositoryLayer;
 using RepositoryLayer.Data.Context;
 using ServiceLayer.Services.Accessory;
 using ServiceLayer.Services.Admin;
+using ServiceLayer.Services.Animals;
 using ServiceLayer.Services.Auth.AuthUser;
 using ServiceLayer.Services.Auth.Jwt;
 using ServiceLayer.Services.Auth.LoginRateLimiter;

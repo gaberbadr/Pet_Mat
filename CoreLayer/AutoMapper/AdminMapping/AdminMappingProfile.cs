@@ -8,7 +8,7 @@ using CoreLayer.Dtos.Admin;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
 
-namespace CoreLayer.AutoMapper.AnimalMapping
+namespace CoreLayer.AutoMapper.AdminMapping
 {
     public class AdminMappingProfile : Profile
     {
