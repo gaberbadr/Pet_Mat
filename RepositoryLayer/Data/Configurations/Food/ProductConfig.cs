@@ -15,9 +15,9 @@ namespace RepositoryLayer.Data.Configurations.Food
         public void Configure(EntityTypeBuilder<Product> builder)
         {
             builder.HasOne(p => p.Brand)
-                   .WithMany(pb => pb.Products)
-                   .HasForeignKey(p => p.BrandId)
-                   .OnDelete(DeleteBehavior.Restrict);
+               .WithMany(pb => pb.Products)
+               .HasForeignKey(p => p.BrandId)
+               .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(p => p.Type)
                 .WithMany(pt => pt.Products)
@@ -33,6 +33,8 @@ namespace RepositoryLayer.Data.Configurations.Food
             builder.HasIndex(p => p.IsActive);
             builder.HasIndex(p => p.BrandId);
             builder.HasIndex(p => p.TypeId);
+            builder.HasIndex(p => p.Price);
+            builder.HasIndex(p => p.Stock);
         }
     }
 }

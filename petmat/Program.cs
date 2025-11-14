@@ -96,6 +96,10 @@ namespace petmat
 
                 await IdentitySeeder.SeedAppUserAsync(userManager, roleManager, unitOfWork);
 
+                await DataSeeder.SeedDeliveryMethodsAsync(unitOfWork);
+                await DataSeeder.SeedProductBrandsAsync(unitOfWork);
+                await DataSeeder.SeedProductTypesAsync(unitOfWork);
+
                 logger.LogInformation("Data seeding completed successfully");
             }
             catch (Exception ex)

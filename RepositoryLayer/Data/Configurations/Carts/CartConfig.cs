@@ -15,6 +15,11 @@ namespace RepositoryLayer.Data.Configurations.Context
         public void Configure(EntityTypeBuilder<Cart> builder)
         {
             builder.HasIndex(c => c.UserId).IsUnique();
+
+            builder.HasOne(c => c.User)
+                .WithOne(u => u.Cart)
+                .HasForeignKey<Cart>(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

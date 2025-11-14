@@ -8,7 +8,7 @@ using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Enums;
 using CoreLayer.Service_Interface.Admin;
-using CoreLayer.Specifications.User;
+using CoreLayer.Specifications.Animals;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;

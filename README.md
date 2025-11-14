@@ -38,6 +38,10 @@ SMTP__Password=pppppp
 Authentication__Google__ClientId=gdfgfgfgf.com
 Authentication__Google__ClientSecret=Gfgfggf-fgfgfg
 
+# Stripe Configuration
+Stripe__Secretkey="sk_test_51ST"
+Stripe__WebhookSecret="whsec_4f"
+
 # Application Configuration
 BaseURL=http://localhost:5000/
 Frontend__BaseUrl=http://127.0.0.1:5500
@@ -69,6 +73,10 @@ ASPNETCORE_URLS=http://+:8080
             "ClientId": "",
             "ClientSecret": ""
         }
+    },
+    "Stripe": {
+        "Secretkey": "sk_test_5",
+        "WebhookSecret": "whsec_4f"
     },
     "Logging": {
         "LogLevel": {

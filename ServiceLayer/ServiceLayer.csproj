@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Google.Apis.Auth" Version="1.70.0" />
+    <PackageReference Include="Stripe.net" Version="49.2.0" />
   </ItemGroup>
 
   <ItemGroup>

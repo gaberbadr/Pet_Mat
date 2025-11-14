@@ -17,7 +17,7 @@ namespace CoreLayer.Entities.Foods
         public string Description { get; set; }
 
         [MaxLength(500)]
-        public string LogoUrl { get; set; }
+        public string? LogoUrl { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

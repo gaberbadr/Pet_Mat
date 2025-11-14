@@ -13,7 +13,7 @@ using CoreLayer.Helper.Documents;
 using CoreLayer.Helper.Pagination;
 using CoreLayer.Service_Interface.Accessory;
 using CoreLayer.Service_Interface.User;
-using CoreLayer.Specifications.User;
+using CoreLayer.Specifications.Animals;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;

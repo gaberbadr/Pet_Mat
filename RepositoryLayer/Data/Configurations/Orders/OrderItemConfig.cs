@@ -15,9 +15,9 @@ namespace RepositoryLayer.Data.Configurations.Orders
         public void Configure(EntityTypeBuilder<OrderItem> builder)
         {
             builder.HasOne(oi => oi.Order)
-                   .WithMany(o => o.Items)
-                   .HasForeignKey(oi => oi.OrderId)
-                   .OnDelete(DeleteBehavior.Cascade);
+                .WithMany(o => o.Items)
+                .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(oi => oi.Product)
                 .WithMany(p => p.OrderItems)

@@ -21,6 +21,8 @@ services:
       SMTP__Password: "${SMTP__Password}"
       Authentication__Google__ClientId: "${Authentication__Google__ClientId}"
       Authentication__Google__ClientSecret: "${Authentication__Google__ClientSecret}"
+      Stripe__Secretkey: "${Stripe__Secretkey}"
+      Stripe__WebhookSecret: "${Stripe__WebhookSecret}"
       BaseURL: "${BaseURL}"
       Frontend__BaseUrl: "${Frontend__BaseUrl}"
       ASPNETCORE_URLS: "${ASPNETCORE_URLS}"

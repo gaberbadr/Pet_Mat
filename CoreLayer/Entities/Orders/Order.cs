@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Entities.Carts;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 
 namespace CoreLayer.Entities.Orders
 {
@@ -24,8 +25,7 @@ namespace CoreLayer.Entities.Orders
 
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 
-        [MaxLength(50)]
-        public string Status { get; set; } = "Pending";
+        public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
         public int? DeliveryMethodId { get; set; }
 

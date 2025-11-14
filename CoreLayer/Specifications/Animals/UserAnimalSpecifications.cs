@@ -9,7 +9,7 @@ using CoreLayer.Entities.Animals;
 using CoreLayer.Enums;
 
 
-namespace CoreLayer.Specifications.User
+namespace CoreLayer.Specifications.Animals
 {
 
 

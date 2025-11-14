@@ -4,7 +4,9 @@ using CoreLayer;
 using CoreLayer.AutoMapper.AdminMapping;
 using CoreLayer.AutoMapper.AnimalMapping;
 using CoreLayer.AutoMapper.DoctorMapping;
+using CoreLayer.AutoMapper.OrderMapping;
 using CoreLayer.AutoMapper.PharmacyMapping;
+using CoreLayer.AutoMapper.ProductMapping;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Helper.EmailSend;
 using CoreLayer.Service_Interface;
@@ -12,7 +14,9 @@ using CoreLayer.Service_Interface.Accessory;
 using CoreLayer.Service_Interface.Admin;
 using CoreLayer.Service_Interface.Doctor;
 using CoreLayer.Service_Interface.IAuth;
+using CoreLayer.Service_Interface.Orders;
 using CoreLayer.Service_Interface.Pharmacy;
+using CoreLayer.Service_Interface.Products;
 using CoreLayer.Service_Interface.User;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -30,8 +34,12 @@ using ServiceLayer.Services.Auth.AuthUser;
 using ServiceLayer.Services.Auth.Jwt;
 using ServiceLayer.Services.Auth.LoginRateLimiter;
 using ServiceLayer.Services.Doctor;
+using ServiceLayer.Services.Orders;
 using ServiceLayer.Services.Pharmacy;
+using ServiceLayer.Services.Products;
 using ServiceLayer.Services.User;
+using Stripe;
+using Stripe.Climate;
 
 namespace petmat.ProgramHelper
 {
@@ -50,6 +58,10 @@ namespace petmat.ProgramHelper
             services.AddApiValidationErrorResponseServices();
             services.AddLimiterServices();
             services.AddJwtAuthenticationServices(configuration);
+
+            //for caching  Performance Optimization
+            services.AddMemoryCache();
+            services.AddResponseCaching();
 
             return services;
         }
@@ -159,6 +171,17 @@ namespace petmat.ProgramHelper
             services.AddScoped<IAdminPharmacyApplicationManagement, AdminPharmacyApplicationManagement>();
             services.AddScoped<IUserPharmacyManagement, UserPharmacyManagement>();
             services.AddScoped<IUserAccessoryManagement, UserAccessoryManagement>();
+            // Cart & Order Services
+            services.AddScoped<ICartService, CartService>();
+            services.AddScoped<IOrderService, ServiceLayer.Services.Orders.OrderService>();
+            services.AddScoped<IAdminOrderService, AdminOrderService>();
+            services.AddScoped<ICouponService, ServiceLayer.Services.Orders.CouponService>();
+            services.AddScoped<IDeliveryMethodService, DeliveryMethodService>();
+            services.AddScoped<IPaymentService, PaymentService>();
+
+            // Product Services
+            services.AddScoped<IProductService, ServiceLayer.Services.Products.ProductService>();
+            services.AddScoped<IAdminProductService, AdminProductService>();
 
 
 
@@ -181,6 +204,11 @@ namespace petmat.ProgramHelper
                 config.AddProfile(new UserMappingProfile(configuration));
                 config.AddProfile(new PharmacyMappingProfile(configuration));
                 config.AddProfile(new AccessoryMappingProfile(configuration));
+
+
+                // Add Order and Product Mapping Profiles
+                config.AddProfile<OrderMappingProfile>();
+                config.AddProfile<ProductMappingProfile>();
             });
 
             return services;
