@@ -24,22 +24,22 @@ namespace CoreLayer.Enums
             Reserved
         }
 
-        // ==================== ORDER STATUS ====================
+    // ==================== ORDER STATUS ====================
 
-        public enum OrderStatus
-        {
-            Pending,
-            Processing,
-            Shipped,
-            Delivered,
-            Cancelled,
-            Refunded
-        }
+    public enum OrderStatus
+    {
+        Pending,
+        Processing,
+        Shipped,
+        Delivered,
+        Cancelled,
+        Refunded
+    }
 
 
-        // ==================== ANIMAL GENDER ====================
+    // ==================== ANIMAL GENDER ====================
 
-        public enum Gender
+    public enum Gender
         {
             Male,
             Female,
@@ -140,6 +140,13 @@ namespace CoreLayer.Enums
             Nutrition,
             Hygiene,
             Other
+        }
+
+    // ==================== Stripe Payment Method ====================
+        public enum PaymentMethod
+        {
+            Online = 1,           // Pay with Stripe
+            CashOnDelivery = 2    // Pay upon receipt
         }
 }
 

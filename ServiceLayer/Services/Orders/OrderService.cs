@@ -50,6 +50,21 @@ namespace ServiceLayer.Services.Orders
             if (deliveryMethod == null)
                 throw new KeyNotFoundException("Delivery method not found");
 
+            // Validate payment for online orders
+            if (dto.PaymentMethod == PaymentMethod.Online)
+            {
+                if (string.IsNullOrEmpty(cart.PaymentIntentId))
+                {
+                    throw new InvalidOperationException("Please complete payment first. Create a payment intent and pay before creating order.");
+                }
+
+                var isPaymentSuccessful = await _paymentService.VerifyPaymentIntentAsync(cart.PaymentIntentId);
+                if (!isPaymentSuccessful)
+                {
+                    throw new InvalidOperationException("Payment not completed. Please complete payment before creating order.");
+                }
+            }
+
             // Validate and create order items
             var orderItems = new List<OrderItem>();
             foreach (var cartItem in cart.Items)
@@ -62,7 +77,6 @@ namespace ServiceLayer.Services.Orders
                 if (product.Stock < cartItem.Quantity)
                     throw new InvalidOperationException($"Insufficient stock for {product.Name}. Available: {product.Stock}");
 
-                // Use current product price (not cart price)
                 var orderItem = new OrderItem
                 {
                     ProductId = product.Id,
@@ -80,7 +94,7 @@ namespace ServiceLayer.Services.Orders
             // Calculate totals
             var subtotal = orderItems.Sum(i => i.Price * i.Quantity);
 
-            // Validate coupon again
+            // Validate coupon
             decimal discountAmount = 0;
             string couponCode = null;
             if (!string.IsNullOrEmpty(cart.CouponCode))
@@ -106,7 +120,7 @@ namespace ServiceLayer.Services.Orders
                 }
             }
 
-            // Create shipping address
+            // ✅ FIXED: Create shipping address WITHOUT saving it separately
             var shippingAddress = new OrderAddress
             {
                 FName = dto.ShippingAddress.FName,
@@ -115,41 +129,27 @@ namespace ServiceLayer.Services.Orders
                 Street = dto.ShippingAddress.Street,
                 Country = dto.ShippingAddress.Country
             };
-            await _unitOfWork.Repository<OrderAddress, int>().AddAsync(shippingAddress);
-            await _unitOfWork.CompleteAsync();
 
-            // Check for existing order with same payment intent
-            if (!string.IsNullOrEmpty(cart.PaymentIntentId))
-            {
-                var existingOrderSpec = new OrderByPaymentIntentIdSpecification(cart.PaymentIntentId);
-                var existingOrder = await _unitOfWork.Repository<Order, int>()
-                    .GetWithSpecficationAsync(existingOrderSpec);
+            // Set initial order status based on payment method
+            var initialStatus = dto.PaymentMethod == PaymentMethod.Online
+                ? OrderStatus.Processing
+                : OrderStatus.Pending;
 
-                if (existingOrder != null)
-                {
-                    _unitOfWork.Repository<Order, int>().Delete(existingOrder);
-                    await _unitOfWork.CompleteAsync();
-                }
-            }
-
-            // Create payment intent
-            var paymentIntent = await _paymentService.CreateOrUpdatePaymentIntentAsync(userId);
-
-            // Create order
+            // ✅ FIXED: Create order with shipping address in one transaction
             var order = new Order
             {
                 BuyerEmail = buyerEmail,
                 UserId = userId,
                 CartId = cart.Id,
                 OrderDate = DateTime.UtcNow,
-                Status = OrderStatus.Pending,
+                Status = initialStatus,
                 DeliveryMethodId = dto.DeliveryMethodId,
                 SubTotal = subtotal,
                 DiscountAmount = discountAmount,
                 CouponCode = couponCode,
-                PaymentIntentId = paymentIntent.PaymentIntentId,
-                ClientSecret = paymentIntent.ClientSecret,
-                ShippingAddressId = shippingAddress.Id,
+                PaymentIntentId = dto.PaymentMethod == PaymentMethod.Online ? cart.PaymentIntentId : null,
+                ClientSecret = dto.PaymentMethod == PaymentMethod.Online ? cart.ClientSecret : null,
+                ShippingAddress = shippingAddress, // ✅ Set navigation property
                 Items = orderItems,
                 CreatedAt = DateTime.UtcNow
             };
@@ -157,12 +157,13 @@ namespace ServiceLayer.Services.Orders
             await _unitOfWork.Repository<Order, int>().AddAsync(order);
             await _unitOfWork.CompleteAsync();
 
-            // Clear cart after successful order
+            // Clear cart
             await _unitOfWork.Repository<CartItem, int>().DeleteRangeAsync(ci => ci.CartId == cart.Id);
             cart.CouponCode = null;
             cart.DiscountAmount = 0;
             cart.PaymentIntentId = null;
             cart.ClientSecret = null;
+            cart.DeliveryMethodId = null;
             cart.LastUpdated = DateTime.UtcNow;
             _unitOfWork.Repository<Cart, int>().Update(cart);
             await _unitOfWork.CompleteAsync();

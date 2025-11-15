@@ -16,7 +16,7 @@ namespace CoreLayer.Entities.Carts
         public string UserId { get; set; }
 
         [MaxLength(50)]
-        public string CouponCode { get; set; }
+        public string? CouponCode { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal DiscountAmount { get; set; }

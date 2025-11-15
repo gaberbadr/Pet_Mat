@@ -24,7 +24,7 @@ namespace petmat.Controllers
         private string GetUserEmail() => User.FindFirstValue(ClaimTypes.Email);
 
         /// <summary>
-        /// Create order from current cart
+        /// Create order (Works for both Online and Cash on Delivery)
         /// </summary>
         [HttpPost]
         [ProducesResponseType(typeof(OrderDto), StatusCodes.Status200OK)]
@@ -44,6 +44,26 @@ namespace petmat.Controllers
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Create payment intent (for online payment only)
+        /// </summary>
+        [HttpPost("payment-intent")]
+        [ProducesResponseType(typeof(PaymentIntentResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<PaymentIntentResponseDto>> CreatePaymentIntent()
+        {
+            try
+            {
+                var userId = GetUserId();
+                var result = await _orderService.CreateOrUpdatePaymentIntentAsync(userId);
+                return Ok(result);
             }
             catch (InvalidOperationException ex)
             {
@@ -81,26 +101,6 @@ namespace petmat.Controllers
             var userId = GetUserId();
             var result = await _orderService.GetUserOrdersAsync(userId);
             return Ok(result);
-        }
-
-        /// <summary>
-        /// Create or update payment intent
-        /// </summary>
-        [HttpPost("payment-intent")]
-        [ProducesResponseType(typeof(PaymentIntentResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<PaymentIntentResponseDto>> CreatePaymentIntent()
-        {
-            try
-            {
-                var userId = GetUserId();
-                var result = await _orderService.CreateOrUpdatePaymentIntentAsync(userId);
-                return Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new ApiErrorResponse(400, ex.Message));
-            }
         }
 
         /// <summary>

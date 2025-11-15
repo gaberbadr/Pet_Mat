@@ -12,7 +12,7 @@ namespace CoreLayer.Specifications
     {
         public Expression<Func<TEntity, bool>> Criteria { get; set; }//Expression, like: where()
         public List<Expression<Func<TEntity, object>>> Includes { get; set; }//list of Expression
-
+        List<string> IncludeStrings { get; }
         public Expression<Func<TEntity, object>> OrderBy { get; set; }
         public Expression<Func<TEntity, object>> OrderByDescending { get; set; }
 

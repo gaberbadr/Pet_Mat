@@ -68,6 +68,10 @@ namespace CoreLayer.Dtos.Orders
 
         [Required]
         public OrderAddressDto ShippingAddress { get; set; }
+
+        // Payment method selection
+        [Required]
+        public PaymentMethod PaymentMethod { get; set; } // Online or CashOnDelivery
     }
 
     public class OrderAddressDto

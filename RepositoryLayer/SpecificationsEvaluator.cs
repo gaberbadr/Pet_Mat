@@ -39,7 +39,11 @@ namespace RepositoryLayer
 
 
             query = spec.Includes.Aggregate(query, (currentQuery, includeExpression) => currentQuery.Include(includeExpression));
-
+           
+            if (spec.IncludeStrings != null)
+            {
+                query = spec.IncludeStrings.Aggregate(query, (currentQuery, includeString) => currentQuery.Include(includeString));
+            }
 
 
             return query;

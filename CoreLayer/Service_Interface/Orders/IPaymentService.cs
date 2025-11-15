@@ -11,5 +11,6 @@ namespace CoreLayer.Service_Interface.Orders
     {
         Task<PaymentIntentResponseDto> CreateOrUpdatePaymentIntentAsync(string userId);
         Task<OrderDto> UpdatePaymentIntentStatusAsync(string paymentIntentId, bool isSuccessful);
+        Task<bool> VerifyPaymentIntentAsync(string paymentIntentId);
     }
 }

@@ -36,15 +36,18 @@ namespace ServiceLayer.Services.Orders
 
             if (cart == null)
             {
-                // Create new cart if doesn't exist
-                cart = new Cart
+                // Return empty cart DTO without creating in database
+                return new CartDto
                 {
+                    Id = 0,
                     UserId = userId,
-                    CreatedAt = DateTime.UtcNow,
-                    LastUpdated = DateTime.UtcNow
+                    CouponCode = null,
+                    DiscountAmount = 0,
+                    SubTotal = 0,
+                    Total = 0,
+                    LastUpdated = DateTime.UtcNow,
+                    Items = new List<CartItemDto>()
                 };
-                await _unitOfWork.Repository<Cart, int>().AddAsync(cart);
-                await _unitOfWork.CompleteAsync();
             }
 
             return await MapCartToDto(cart);
@@ -66,14 +69,19 @@ namespace ServiceLayer.Services.Orders
 
             if (cart == null)
             {
+                // Create cart properly
                 cart = new Cart
                 {
                     UserId = userId,
                     CreatedAt = DateTime.UtcNow,
                     LastUpdated = DateTime.UtcNow
                 };
+
                 await _unitOfWork.Repository<Cart, int>().AddAsync(cart);
-                await _unitOfWork.CompleteAsync();
+                await _unitOfWork.CompleteAsync(); // Save cart first
+
+                // Reload cart with specification to get navigation properties
+                cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
             }
 
             // Check if product already in cart
@@ -114,7 +122,9 @@ namespace ServiceLayer.Services.Orders
             _unitOfWork.Repository<Cart, int>().Update(cart);
             await _unitOfWork.CompleteAsync();
 
-            var cartDto = await MapCartToDto(cart);
+            // Reload cart to get updated items with navigation properties
+            var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+            var cartDto = await MapCartToDto(updatedCart);
 
             return new CartOperationResponseDto
             {
@@ -155,7 +165,9 @@ namespace ServiceLayer.Services.Orders
             _unitOfWork.Repository<Cart, int>().Update(cart);
             await _unitOfWork.CompleteAsync();
 
-            var cartDto = await MapCartToDto(cart);
+            // ✅ FIX: Reload cart
+            var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+            var cartDto = await MapCartToDto(updatedCart);
 
             return new CartOperationResponseDto
             {
@@ -189,7 +201,9 @@ namespace ServiceLayer.Services.Orders
             _unitOfWork.Repository<Cart, int>().Update(cart);
             await _unitOfWork.CompleteAsync();
 
-            var cartDto = await MapCartToDto(cart);
+            // ✅ FIX: Reload cart
+            var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+            var cartDto = await MapCartToDto(updatedCart);
 
             return new CartOperationResponseDto
             {
@@ -217,13 +231,22 @@ namespace ServiceLayer.Services.Orders
             _unitOfWork.Repository<Cart, int>().Update(cart);
             await _unitOfWork.CompleteAsync();
 
-            var cartDto = await MapCartToDto(cart);
-
+            // Return empty cart DTO
             return new CartOperationResponseDto
             {
                 Success = true,
                 Message = "Cart cleared successfully",
-                Cart = cartDto
+                Cart = new CartDto
+                {
+                    Id = cart.Id,
+                    UserId = cart.UserId,
+                    CouponCode = null,
+                    DiscountAmount = 0,
+                    SubTotal = 0,
+                    Total = 0,
+                    LastUpdated = cart.LastUpdated,
+                    Items = new List<CartItemDto>()
+                }
             };
         }
 
@@ -274,7 +297,9 @@ namespace ServiceLayer.Services.Orders
             _unitOfWork.Repository<Cart, int>().Update(cart);
             await _unitOfWork.CompleteAsync();
 
-            var cartDto = await MapCartToDto(cart);
+            // ✅ FIX: Reload cart
+            var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+            var cartDto = await MapCartToDto(updatedCart);
 
             return new CartOperationResponseDto
             {
@@ -298,7 +323,9 @@ namespace ServiceLayer.Services.Orders
             _unitOfWork.Repository<Cart, int>().Update(cart);
             await _unitOfWork.CompleteAsync();
 
-            var cartDto = await MapCartToDto(cart);
+            // ✅ FIX: Reload cart
+            var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+            var cartDto = await MapCartToDto(updatedCart);
 
             return new CartOperationResponseDto
             {
@@ -351,9 +378,11 @@ namespace ServiceLayer.Services.Orders
 
         private async Task<CartDto> MapCartToDto(Cart cart)
         {
-            // Reload with items
-            var spec = new CartWithItemsSpecification(cart.UserId);
-            cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+            // ✅ FIX: Check if cart is null
+            if (cart == null)
+            {
+                return null;
+            }
 
             var subtotal = cart.Items?.Sum(i => i.Price * i.Quantity) ?? 0;
             var total = subtotal - cart.DiscountAmount;
@@ -371,19 +400,19 @@ namespace ServiceLayer.Services.Orders
                 {
                     Id = i.Id,
                     ProductId = i.ProductId,
-                    ProductName = i.Product.Name,
-                    ProductPictureUrl = !string.IsNullOrEmpty(i.Product.PictureUrl)
+                    ProductName = i.Product?.Name ?? "Unknown Product",
+                    ProductPictureUrl = !string.IsNullOrEmpty(i.Product?.PictureUrl)
                         ? DocumentSetting.GetFileUrl(i.Product.PictureUrl, "products", _configuration["BaseURL"])
                         : null,
                     Price = i.Price,
                     Quantity = i.Quantity,
                     Total = i.Price * i.Quantity,
-                    Stock = i.Product.Stock,
-                    BrandName = i.Product.Brand.Name
+                    Stock = i.Product?.Stock ?? 0,
+                    BrandName = i.Product?.Brand?.Name ?? "Unknown Brand"
                 }).ToList() ?? new List<CartItemDto>()
             };
 
             return cartDto;
         }
     }
- }
+}

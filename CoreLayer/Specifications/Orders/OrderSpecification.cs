@@ -15,9 +15,8 @@ namespace CoreLayer.Specifications.Orders
         public CartWithItemsSpecification(string userId)
             : base(c => c.UserId == userId)
         {
-            Includes.Add(c => c.Items);
-            Includes.Add(c => c.Items.Select(i => i.Product).FirstOrDefault());
-            Includes.Add(c => c.Items.Select(i => i.Product.Brand).FirstOrDefault());
+            // Cart -> Items -> Product -> Brand
+            AddInclude("Items.Product.Brand");
         }
     }
 
@@ -27,8 +26,10 @@ namespace CoreLayer.Specifications.Orders
         public OrderWithDetailsSpecification(int orderId, string userId)
             : base(o => o.Id == orderId && o.UserId == userId)
         {
-            Includes.Add(o => o.Items);
-            Includes.Add(o => o.Items.Select(i => i.Product).FirstOrDefault());
+            // Load nested Order -> Items -> Product
+            AddInclude("Items.Product");
+
+            // Load top-level properties
             Includes.Add(o => o.DeliveryMethod);
             Includes.Add(o => o.ShippingAddress);
         }
@@ -39,10 +40,13 @@ namespace CoreLayer.Specifications.Orders
         public OrdersByUserSpecification(string userId)
             : base(o => o.UserId == userId)
         {
-            Includes.Add(o => o.Items);
-            Includes.Add(o => o.Items.Select(i => i.Product).FirstOrDefault());
+            // Load nested Order -> Items -> Product
+            AddInclude("Items.Product");
+
+            // Load top-level properties
             Includes.Add(o => o.DeliveryMethod);
             Includes.Add(o => o.ShippingAddress);
+
             OrderByDescending = o => o.OrderDate;
         }
     }
@@ -52,8 +56,10 @@ namespace CoreLayer.Specifications.Orders
         public OrderByPaymentIntentIdSpecification(string paymentIntentId)
             : base(o => o.PaymentIntentId == paymentIntentId)
         {
-            Includes.Add(o => o.Items);
-            Includes.Add(o => o.Items.Select(i => i.Product).FirstOrDefault());
+            // Load nested Order -> Items -> Product
+            AddInclude("Items.Product");
+
+            // Load top-level properties
             Includes.Add(o => o.DeliveryMethod);
             Includes.Add(o => o.ShippingAddress);
         }
@@ -65,20 +71,22 @@ namespace CoreLayer.Specifications.Orders
         public AdminOrdersSpecification(int pageIndex, int pageSize, OrderStatus? status = null)
             : base(o => !status.HasValue || o.Status == status.Value)
         {
-            Includes.Add(o => o.Items);
-            Includes.Add(o => o.Items.Select(i => i.Product).FirstOrDefault());
+            // Load nested Order -> Items -> Product
+            AddInclude("Items.Product");
+
+            // Load top-level properties
             Includes.Add(o => o.DeliveryMethod);
             Includes.Add(o => o.ShippingAddress);
             Includes.Add(o => o.User);
 
             OrderByDescending = o => o.OrderDate;
-
             applyPagnation((pageIndex - 1) * pageSize, pageSize);
         }
     }
 
     public class AdminOrdersCountSpecification : BaseSpecifications<Order, int>
     {
+        // No includes needed, so no changes
         public AdminOrdersCountSpecification(OrderStatus? status = null)
             : base(o => !status.HasValue || o.Status == status.Value)
         {
@@ -90,8 +98,10 @@ namespace CoreLayer.Specifications.Orders
         public AdminOrderByIdSpecification(int orderId)
             : base(o => o.Id == orderId)
         {
-            Includes.Add(o => o.Items);
-            Includes.Add(o => o.Items.Select(i => i.Product).FirstOrDefault());
+            // Load nested Order -> Items -> Product
+            AddInclude("Items.Product");
+
+            // Load top-level properties
             Includes.Add(o => o.DeliveryMethod);
             Includes.Add(o => o.ShippingAddress);
             Includes.Add(o => o.User);

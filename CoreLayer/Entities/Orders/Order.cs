@@ -13,7 +13,6 @@ namespace CoreLayer.Entities.Orders
 {
     public class Order : BaseEntity<int>
     {
-
         [Required]
         [MaxLength(200)]
         public string BuyerEmail { get; set; }
@@ -36,12 +35,12 @@ namespace CoreLayer.Entities.Orders
         public decimal DiscountAmount { get; set; }
 
         [MaxLength(50)]
-        public string CouponCode { get; set; }
+        public string? CouponCode { get; set; }
 
         [MaxLength(200)]
-        public string PaymentIntentId { get; set; }
+        public string? PaymentIntentId { get; set; }
 
-        public string ClientSecret { get; set; }
+        public string? ClientSecret { get; set; }
 
         public int ShippingAddressId { get; set; }
 

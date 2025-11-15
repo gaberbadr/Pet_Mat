@@ -16,10 +16,10 @@ namespace RepositoryLayer.Data.Configurations.Context
         public void Configure(EntityTypeBuilder<Order> builder)
         {
             builder.Property(o => o.Status)
-                 .HasConversion(
-                     status => status.ToString(),
-                     status => (OrderStatus)Enum.Parse(typeof(OrderStatus), status))
-                 .HasMaxLength(50);
+               .HasConversion(
+                   status => status.ToString(),
+                   status => (OrderStatus)Enum.Parse(typeof(OrderStatus), status))
+               .HasMaxLength(50);
 
             builder.HasOne(o => o.User)
                 .WithMany(u => u.Orders)
@@ -36,10 +36,12 @@ namespace RepositoryLayer.Data.Configurations.Context
                 .HasForeignKey(o => o.DeliveryMethodId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // Cascade delete for address
             builder.HasOne(o => o.ShippingAddress)
                 .WithOne()
                 .HasForeignKey<Order>(o => o.ShippingAddressId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
 
             builder.HasIndex(o => o.UserId);
             builder.HasIndex(o => o.OrderDate);

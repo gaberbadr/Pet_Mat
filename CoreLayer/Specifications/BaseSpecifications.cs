@@ -12,6 +12,7 @@ namespace CoreLayer.Specifications
     {
         public Expression<Func<TEntity, bool>> Criteria { get; set; } = null;
         public List<Expression<Func<TEntity, object>>> Includes { get; set; } = new List<Expression<Func<TEntity, object>>>();
+        public List<string> IncludeStrings { get; } = new List<string>();
         public Expression<Func<TEntity, object>> OrderBy { get; set; } = null;
         public Expression<Func<TEntity, object>> OrderByDescending { get; set; } = null;
         public int Skip { get; set; }
@@ -32,6 +33,10 @@ namespace CoreLayer.Specifications
             Take = take;
             Skip = skip;
 
+        }
+        protected void AddInclude(string includeString)
+        {
+            IncludeStrings.Add(includeString);
         }
 
 

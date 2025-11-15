@@ -16,6 +16,7 @@ using Stripe;
 
 namespace ServiceLayer.Services.Orders
 {
+
     public class PaymentService : IPaymentService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -31,7 +32,6 @@ namespace ServiceLayer.Services.Orders
         {
             StripeConfiguration.ApiKey = _configuration["Stripe:Secretkey"];
 
-            // Get cart
             var cartSpec = new CartWithItemsSpecification(userId);
             var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(cartSpec);
 
@@ -51,7 +51,7 @@ namespace ServiceLayer.Services.Orders
 
             var subtotal = cart.Items.Sum(i => i.Price * i.Quantity);
 
-            // Get delivery method cost if set
+            // Get delivery method cost
             decimal shippingPrice = 0m;
             if (cart.DeliveryMethodId.HasValue)
             {
@@ -91,12 +91,75 @@ namespace ServiceLayer.Services.Orders
             var service = new PaymentIntentService();
             PaymentIntent paymentIntent;
 
-            if (string.IsNullOrEmpty(cart.PaymentIntentId))
+            // Check if payment intent exists and its status
+            if (!string.IsNullOrEmpty(cart.PaymentIntentId))
+            {
+                try
+                {
+                    var existingIntent = await service.GetAsync(cart.PaymentIntentId);
+
+                    // If payment already succeeded, create a new payment intent
+                    if (existingIntent.Status == "succeeded")
+                    {
+                        var options = new PaymentIntentCreateOptions
+                        {
+                            Amount = (long)(total * 100),
+                            Currency = "usd",
+                            PaymentMethodTypes = new List<string> { "card" }
+                        };
+
+                        paymentIntent = await service.CreateAsync(options);
+                        cart.PaymentIntentId = paymentIntent.Id;
+                        cart.ClientSecret = paymentIntent.ClientSecret;
+                    }
+                    // If payment can be updated
+                    else if (existingIntent.Status == "requires_payment_method" ||
+                             existingIntent.Status == "requires_confirmation" ||
+                             existingIntent.Status == "requires_action")
+                    {
+                        var updateOptions = new PaymentIntentUpdateOptions
+                        {
+                            Amount = (long)(total * 100)
+                        };
+
+                        paymentIntent = await service.UpdateAsync(cart.PaymentIntentId, updateOptions);
+                    }
+                    else
+                    {
+                        // Create new payment intent
+                        var options = new PaymentIntentCreateOptions
+                        {
+                            Amount = (long)(total * 100),
+                            Currency = "usd",
+                            PaymentMethodTypes = new List<string> { "card" }
+                        };
+
+                        paymentIntent = await service.CreateAsync(options);
+                        cart.PaymentIntentId = paymentIntent.Id;
+                        cart.ClientSecret = paymentIntent.ClientSecret;
+                    }
+                }
+                catch (StripeException)
+                {
+                    // Create new payment intent on error
+                    var options = new PaymentIntentCreateOptions
+                    {
+                        Amount = (long)(total * 100),
+                        Currency = "usd",
+                        PaymentMethodTypes = new List<string> { "card" }
+                    };
+
+                    paymentIntent = await service.CreateAsync(options);
+                    cart.PaymentIntentId = paymentIntent.Id;
+                    cart.ClientSecret = paymentIntent.ClientSecret;
+                }
+            }
+            else
             {
                 // Create new payment intent
                 var options = new PaymentIntentCreateOptions
                 {
-                    Amount = (long)(total * 100), // Convert to cents
+                    Amount = (long)(total * 100),
                     Currency = "usd",
                     PaymentMethodTypes = new List<string> { "card" }
                 };
@@ -104,16 +167,6 @@ namespace ServiceLayer.Services.Orders
                 paymentIntent = await service.CreateAsync(options);
                 cart.PaymentIntentId = paymentIntent.Id;
                 cart.ClientSecret = paymentIntent.ClientSecret;
-            }
-            else
-            {
-                // Update existing payment intent
-                var options = new PaymentIntentUpdateOptions
-                {
-                    Amount = (long)(total * 100)
-                };
-
-                paymentIntent = await service.UpdateAsync(cart.PaymentIntentId, options);
             }
 
             _unitOfWork.Repository<Cart, int>().Update(cart);
@@ -128,6 +181,22 @@ namespace ServiceLayer.Services.Orders
             };
         }
 
+        public async Task<bool> VerifyPaymentIntentAsync(string paymentIntentId)
+        {
+            try
+            {
+                StripeConfiguration.ApiKey = _configuration["Stripe:Secretkey"];
+                var service = new PaymentIntentService();
+                var paymentIntent = await service.GetAsync(paymentIntentId);
+
+                return paymentIntent.Status == "succeeded";
+            }
+            catch (StripeException)
+            {
+                return false;
+            }
+        }
+
         public async Task<OrderDto> UpdatePaymentIntentStatusAsync(string paymentIntentId, bool isSuccessful)
         {
             var spec = new OrderByPaymentIntentIdSpecification(paymentIntentId);
@@ -140,7 +209,6 @@ namespace ServiceLayer.Services.Orders
             _unitOfWork.Repository<Order, int>().Update(order);
             await _unitOfWork.CompleteAsync();
 
-            // Reload with all details
             var detailSpec = new AdminOrderByIdSpecification(order.Id);
             order = await _unitOfWork.Repository<Order, int>().GetWithSpecficationAsync(detailSpec);
 

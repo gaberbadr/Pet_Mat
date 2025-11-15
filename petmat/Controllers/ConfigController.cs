@@ -25,7 +25,8 @@ namespace petmat.Controllers
                 { "messageType", EnumHelper.GetEnumValues<MessageType>() },
                 { "messageContextType", EnumHelper.GetEnumValues<MessageContextType>() },
                 { "reactionType", EnumHelper.GetEnumValues<ReactionType>() },
-                { "pharmacyListingCategory", EnumHelper.GetEnumValues<PharmacyListingCategory>() }
+                { "pharmacyListingCategory", EnumHelper.GetEnumValues<PharmacyListingCategory>()},
+                { "paymentMethod", EnumHelper.GetEnumValues<PaymentMethod>()}
             };
 
             return Ok(result);
