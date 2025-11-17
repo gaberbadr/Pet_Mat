@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using CoreLayer;
@@ -50,18 +49,12 @@ namespace ServiceLayer.Services.Orders
             if (deliveryMethod == null)
                 throw new KeyNotFoundException("Delivery method not found");
 
-            // Validate payment for online orders
+            // Ensure payment intent exists
             if (dto.PaymentMethod == PaymentMethod.Online)
             {
                 if (string.IsNullOrEmpty(cart.PaymentIntentId))
                 {
-                    throw new InvalidOperationException("Please complete payment first. Create a payment intent and pay before creating order.");
-                }
-
-                var isPaymentSuccessful = await _paymentService.VerifyPaymentIntentAsync(cart.PaymentIntentId);
-                if (!isPaymentSuccessful)
-                {
-                    throw new InvalidOperationException("Payment not completed. Please complete payment before creating order.");
+                    throw new InvalidOperationException("Please create a payment intent first before creating order.");
                 }
             }
 
@@ -120,7 +113,7 @@ namespace ServiceLayer.Services.Orders
                 }
             }
 
-            // ✅ FIXED: Create shipping address WITHOUT saving it separately
+            // Create shipping address
             var shippingAddress = new OrderAddress
             {
                 FName = dto.ShippingAddress.FName,
@@ -130,12 +123,12 @@ namespace ServiceLayer.Services.Orders
                 Country = dto.ShippingAddress.Country
             };
 
-            // Set initial order status based on payment method
+            // ✅ NEW: Set initial order status based on payment method
             var initialStatus = dto.PaymentMethod == PaymentMethod.Online
-                ? OrderStatus.Processing
-                : OrderStatus.Pending;
+                ? OrderStatus.PendingPayment  // Will be updated by webhook
+                : OrderStatus.Pending;         // Cash on Delivery
 
-            // ✅ FIXED: Create order with shipping address in one transaction
+            // ✅ Create order IMMEDIATELY (before payment verification)
             var order = new Order
             {
                 BuyerEmail = buyerEmail,
@@ -149,7 +142,7 @@ namespace ServiceLayer.Services.Orders
                 CouponCode = couponCode,
                 PaymentIntentId = dto.PaymentMethod == PaymentMethod.Online ? cart.PaymentIntentId : null,
                 ClientSecret = dto.PaymentMethod == PaymentMethod.Online ? cart.ClientSecret : null,
-                ShippingAddress = shippingAddress, // ✅ Set navigation property
+                ShippingAddress = shippingAddress,
                 Items = orderItems,
                 CreatedAt = DateTime.UtcNow
             };
@@ -168,6 +161,7 @@ namespace ServiceLayer.Services.Orders
             _unitOfWork.Repository<Cart, int>().Update(cart);
             await _unitOfWork.CompleteAsync();
 
+            // ✅ Return created order (status = PendingPayment for online)
             return await GetOrderByIdAsync(userId, order.Id);
         }
 
@@ -194,6 +188,14 @@ namespace ServiceLayer.Services.Orders
                 Count = orderDtos.Count,
                 Data = orderDtos
             };
+        }
+
+        public async Task<bool> ValidateOrderExistsForPaymentAsync(string paymentIntentId)
+        {
+            var spec = new OrderByPaymentIntentIdSpecification(paymentIntentId);
+            var order = await _unitOfWork.Repository<Order, int>().GetWithSpecficationAsync(spec);
+
+            return order != null && order.Status == OrderStatus.PendingPayment;
         }
 
         public async Task<PaymentIntentResponseDto> CreateOrUpdatePaymentIntentAsync(string userId)

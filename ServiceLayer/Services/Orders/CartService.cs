@@ -14,405 +14,405 @@ using CoreLayer.Service_Interface.Orders;
 using CoreLayer.Specifications.Orders;
 using Microsoft.Extensions.Configuration;
 
-namespace ServiceLayer.Services.Orders
-{
-    public class CartService : ICartService
+    namespace ServiceLayer.Services.Orders
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
-        private readonly IConfiguration _configuration;
-
-        public CartService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration)
+        public class CartService : ICartService
         {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
-            _configuration = configuration;
-        }
+            private readonly IUnitOfWork _unitOfWork;
+            private readonly IMapper _mapper;
+            private readonly IConfiguration _configuration;
 
-        public async Task<CartDto> GetCartAsync(string userId)
-        {
-            var spec = new CartWithItemsSpecification(userId);
-            var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
-
-            if (cart == null)
+            public CartService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration)
             {
-                // Return empty cart DTO without creating in database
-                return new CartDto
-                {
-                    Id = 0,
-                    UserId = userId,
-                    CouponCode = null,
-                    DiscountAmount = 0,
-                    SubTotal = 0,
-                    Total = 0,
-                    LastUpdated = DateTime.UtcNow,
-                    Items = new List<CartItemDto>()
-                };
+                _unitOfWork = unitOfWork;
+                _mapper = mapper;
+                _configuration = configuration;
             }
 
-            return await MapCartToDto(cart);
-        }
-
-        public async Task<CartOperationResponseDto> AddToCartAsync(string userId, AddToCartDto dto)
-        {
-            // Validate product
-            var product = await _unitOfWork.Repository<Product, int>().GetAsync(dto.ProductId);
-            if (product == null || !product.IsActive)
-                throw new KeyNotFoundException("Product not found or inactive");
-
-            if (product.Stock < dto.Quantity)
-                throw new InvalidOperationException($"Insufficient stock. Available: {product.Stock}");
-
-            // Get or create cart
-            var spec = new CartWithItemsSpecification(userId);
-            var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
-
-            if (cart == null)
+            public async Task<CartDto> GetCartAsync(string userId)
             {
-                // Create cart properly
-                cart = new Cart
+                var spec = new CartWithItemsSpecification(userId);
+                var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+
+                if (cart == null)
                 {
-                    UserId = userId,
-                    CreatedAt = DateTime.UtcNow,
-                    LastUpdated = DateTime.UtcNow
-                };
+                    // Return empty cart DTO without creating in database
+                    return new CartDto
+                    {
+                        Id = 0,
+                        UserId = userId,
+                        CouponCode = null,
+                        DiscountAmount = 0,
+                        SubTotal = 0,
+                        Total = 0,
+                        LastUpdated = DateTime.UtcNow,
+                        Items = new List<CartItemDto>()
+                    };
+                }
 
-                await _unitOfWork.Repository<Cart, int>().AddAsync(cart);
-                await _unitOfWork.CompleteAsync(); // Save cart first
-
-                // Reload cart with specification to get navigation properties
-                cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+                return await MapCartToDto(cart);
             }
 
-            // Check if product already in cart
-            var existingItem = cart.Items?.FirstOrDefault(i => i.ProductId == dto.ProductId);
-
-            if (existingItem != null)
+            public async Task<CartOperationResponseDto> AddToCartAsync(string userId, AddToCartDto dto)
             {
-                // Update quantity
-                var newQuantity = existingItem.Quantity + dto.Quantity;
-                if (product.Stock < newQuantity)
+                // Validate product
+                var product = await _unitOfWork.Repository<Product, int>().GetAsync(dto.ProductId);
+                if (product == null || !product.IsActive)
+                    throw new KeyNotFoundException("Product not found or inactive");
+
+                if (product.Stock < dto.Quantity)
                     throw new InvalidOperationException($"Insufficient stock. Available: {product.Stock}");
 
-                existingItem.Quantity = newQuantity;
-                existingItem.Price = product.Price; // Update price
-                _unitOfWork.Repository<CartItem, int>().Update(existingItem);
-            }
-            else
-            {
-                // Add new item
-                var cartItem = new CartItem
+                // Get or create cart
+                var spec = new CartWithItemsSpecification(userId);
+                var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+
+                if (cart == null)
                 {
-                    CartId = cart.Id,
-                    ProductId = dto.ProductId,
-                    Quantity = dto.Quantity,
-                    Price = product.Price,
-                    CreatedAt = DateTime.UtcNow
+                    // Create cart properly
+                    cart = new Cart
+                    {
+                        UserId = userId,
+                        CreatedAt = DateTime.UtcNow,
+                        LastUpdated = DateTime.UtcNow
+                    };
+
+                    await _unitOfWork.Repository<Cart, int>().AddAsync(cart);
+                    await _unitOfWork.CompleteAsync(); // Save cart first
+
+                    // Reload cart with specification to get navigation properties
+                    cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+                }
+
+                // Check if product already in cart
+                var existingItem = cart.Items?.FirstOrDefault(i => i.ProductId == dto.ProductId);
+
+                if (existingItem != null)
+                {
+                    // Update quantity
+                    var newQuantity = existingItem.Quantity + dto.Quantity;
+                    if (product.Stock < newQuantity)
+                        throw new InvalidOperationException($"Insufficient stock. Available: {product.Stock}");
+
+                    existingItem.Quantity = newQuantity;
+                    existingItem.Price = product.Price; // Update price
+                    _unitOfWork.Repository<CartItem, int>().Update(existingItem);
+                }
+                else
+                {
+                    // Add new item
+                    var cartItem = new CartItem
+                    {
+                        CartId = cart.Id,
+                        ProductId = dto.ProductId,
+                        Quantity = dto.Quantity,
+                        Price = product.Price,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _unitOfWork.Repository<CartItem, int>().AddAsync(cartItem);
+                }
+
+                // Recalculate discount if coupon applied
+                if (!string.IsNullOrEmpty(cart.CouponCode))
+                {
+                    await RecalculateDiscount(cart);
+                }
+
+                cart.LastUpdated = DateTime.UtcNow;
+                _unitOfWork.Repository<Cart, int>().Update(cart);
+                await _unitOfWork.CompleteAsync();
+
+                // Reload cart to get updated items with navigation properties
+                var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+                var cartDto = await MapCartToDto(updatedCart);
+
+                return new CartOperationResponseDto
+                {
+                    Success = true,
+                    Message = "Product added to cart successfully",
+                    Cart = cartDto
                 };
-                await _unitOfWork.Repository<CartItem, int>().AddAsync(cartItem);
             }
 
-            // Recalculate discount if coupon applied
-            if (!string.IsNullOrEmpty(cart.CouponCode))
+            public async Task<CartOperationResponseDto> UpdateCartItemAsync(string userId, int cartItemId, UpdateCartItemDto dto)
             {
-                await RecalculateDiscount(cart);
+                var spec = new CartWithItemsSpecification(userId);
+                var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+
+                if (cart == null)
+                    throw new KeyNotFoundException("Cart not found");
+
+                var cartItem = cart.Items?.FirstOrDefault(i => i.Id == cartItemId);
+                if (cartItem == null)
+                    throw new KeyNotFoundException("Cart item not found");
+
+                // Validate stock
+                var product = await _unitOfWork.Repository<Product, int>().GetAsync(cartItem.ProductId);
+                if (product.Stock < dto.Quantity)
+                    throw new InvalidOperationException($"Insufficient stock. Available: {product.Stock}");
+
+                cartItem.Quantity = dto.Quantity;
+                cartItem.Price = product.Price; // Update to current price
+                _unitOfWork.Repository<CartItem, int>().Update(cartItem);
+
+                // Recalculate discount
+                if (!string.IsNullOrEmpty(cart.CouponCode))
+                {
+                    await RecalculateDiscount(cart);
+                }
+
+                cart.LastUpdated = DateTime.UtcNow;
+                _unitOfWork.Repository<Cart, int>().Update(cart);
+                await _unitOfWork.CompleteAsync();
+
+                // ✅ FIX: Reload cart
+                var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+                var cartDto = await MapCartToDto(updatedCart);
+
+                return new CartOperationResponseDto
+                {
+                    Success = true,
+                    Message = "Cart item updated successfully",
+                    Cart = cartDto
+                };
             }
 
-            cart.LastUpdated = DateTime.UtcNow;
-            _unitOfWork.Repository<Cart, int>().Update(cart);
-            await _unitOfWork.CompleteAsync();
-
-            // Reload cart to get updated items with navigation properties
-            var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
-            var cartDto = await MapCartToDto(updatedCart);
-
-            return new CartOperationResponseDto
+            public async Task<CartOperationResponseDto> RemoveCartItemAsync(string userId, int cartItemId)
             {
-                Success = true,
-                Message = "Product added to cart successfully",
-                Cart = cartDto
-            };
-        }
+                var spec = new CartWithItemsSpecification(userId);
+                var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
 
-        public async Task<CartOperationResponseDto> UpdateCartItemAsync(string userId, int cartItemId, UpdateCartItemDto dto)
-        {
-            var spec = new CartWithItemsSpecification(userId);
-            var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+                if (cart == null)
+                    throw new KeyNotFoundException("Cart not found");
 
-            if (cart == null)
-                throw new KeyNotFoundException("Cart not found");
+                var cartItem = cart.Items?.FirstOrDefault(i => i.Id == cartItemId);
+                if (cartItem == null)
+                    throw new KeyNotFoundException("Cart item not found");
 
-            var cartItem = cart.Items?.FirstOrDefault(i => i.Id == cartItemId);
-            if (cartItem == null)
-                throw new KeyNotFoundException("Cart item not found");
+                _unitOfWork.Repository<CartItem, int>().Delete(cartItem);
 
-            // Validate stock
-            var product = await _unitOfWork.Repository<Product, int>().GetAsync(cartItem.ProductId);
-            if (product.Stock < dto.Quantity)
-                throw new InvalidOperationException($"Insufficient stock. Available: {product.Stock}");
+                // Recalculate discount
+                if (!string.IsNullOrEmpty(cart.CouponCode))
+                {
+                    await RecalculateDiscount(cart);
+                }
 
-            cartItem.Quantity = dto.Quantity;
-            cartItem.Price = product.Price; // Update to current price
-            _unitOfWork.Repository<CartItem, int>().Update(cartItem);
+                cart.LastUpdated = DateTime.UtcNow;
+                _unitOfWork.Repository<Cart, int>().Update(cart);
+                await _unitOfWork.CompleteAsync();
 
-            // Recalculate discount
-            if (!string.IsNullOrEmpty(cart.CouponCode))
-            {
-                await RecalculateDiscount(cart);
+                // ✅ FIX: Reload cart
+                var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+                var cartDto = await MapCartToDto(updatedCart);
+
+                return new CartOperationResponseDto
+                {
+                    Success = true,
+                    Message = "Cart item removed successfully",
+                    Cart = cartDto
+                };
             }
 
-            cart.LastUpdated = DateTime.UtcNow;
-            _unitOfWork.Repository<Cart, int>().Update(cart);
-            await _unitOfWork.CompleteAsync();
-
-            // ✅ FIX: Reload cart
-            var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
-            var cartDto = await MapCartToDto(updatedCart);
-
-            return new CartOperationResponseDto
+            public async Task<CartOperationResponseDto> ClearCartAsync(string userId)
             {
-                Success = true,
-                Message = "Cart item updated successfully",
-                Cart = cartDto
-            };
-        }
+                var spec = new CartWithItemsSpecification(userId);
+                var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
 
-        public async Task<CartOperationResponseDto> RemoveCartItemAsync(string userId, int cartItemId)
-        {
-            var spec = new CartWithItemsSpecification(userId);
-            var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+                if (cart == null)
+                    throw new KeyNotFoundException("Cart not found");
 
-            if (cart == null)
-                throw new KeyNotFoundException("Cart not found");
+                // Delete all items
+                await _unitOfWork.Repository<CartItem, int>().DeleteRangeAsync(ci => ci.CartId == cart.Id);
 
-            var cartItem = cart.Items?.FirstOrDefault(i => i.Id == cartItemId);
-            if (cartItem == null)
-                throw new KeyNotFoundException("Cart item not found");
+                // Reset cart
+                cart.CouponCode = null;
+                cart.DiscountAmount = 0;
+                cart.LastUpdated = DateTime.UtcNow;
+                _unitOfWork.Repository<Cart, int>().Update(cart);
+                await _unitOfWork.CompleteAsync();
 
-            _unitOfWork.Repository<CartItem, int>().Delete(cartItem);
-
-            // Recalculate discount
-            if (!string.IsNullOrEmpty(cart.CouponCode))
-            {
-                await RecalculateDiscount(cart);
+                // Return empty cart DTO
+                return new CartOperationResponseDto
+                {
+                    Success = true,
+                    Message = "Cart cleared successfully",
+                    Cart = new CartDto
+                    {
+                        Id = cart.Id,
+                        UserId = cart.UserId,
+                        CouponCode = null,
+                        DiscountAmount = 0,
+                        SubTotal = 0,
+                        Total = 0,
+                        LastUpdated = cart.LastUpdated,
+                        Items = new List<CartItemDto>()
+                    }
+                };
             }
 
-            cart.LastUpdated = DateTime.UtcNow;
-            _unitOfWork.Repository<Cart, int>().Update(cart);
-            await _unitOfWork.CompleteAsync();
-
-            // ✅ FIX: Reload cart
-            var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
-            var cartDto = await MapCartToDto(updatedCart);
-
-            return new CartOperationResponseDto
+            public async Task<CartOperationResponseDto> ApplyCouponAsync(string userId, ApplyCouponDto dto)
             {
-                Success = true,
-                Message = "Cart item removed successfully",
-                Cart = cartDto
-            };
-        }
+                var spec = new CartWithItemsSpecification(userId);
+                var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
 
-        public async Task<CartOperationResponseDto> ClearCartAsync(string userId)
-        {
-            var spec = new CartWithItemsSpecification(userId);
-            var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+                if (cart == null)
+                    throw new KeyNotFoundException("Cart not found");
 
-            if (cart == null)
-                throw new KeyNotFoundException("Cart not found");
+                if (cart.Items == null || !cart.Items.Any())
+                    throw new InvalidOperationException("Cart is empty");
 
-            // Delete all items
-            await _unitOfWork.Repository<CartItem, int>().DeleteRangeAsync(ci => ci.CartId == cart.Id);
+                // Validate coupon
+                var coupon = await _unitOfWork.Repository<Coupon, int>()
+                    .FindAsync(c => c.Code == dto.CouponCode && c.IsActive);
 
-            // Reset cart
-            cart.CouponCode = null;
-            cart.DiscountAmount = 0;
-            cart.LastUpdated = DateTime.UtcNow;
-            _unitOfWork.Repository<Cart, int>().Update(cart);
-            await _unitOfWork.CompleteAsync();
+                var validCoupon = coupon.FirstOrDefault();
+                if (validCoupon == null)
+                    throw new KeyNotFoundException("Invalid or inactive coupon code");
 
-            // Return empty cart DTO
-            return new CartOperationResponseDto
+                if (validCoupon.ExpiresAt.HasValue && validCoupon.ExpiresAt.Value < DateTime.UtcNow)
+                    throw new InvalidOperationException("Coupon has expired");
+
+                var subtotal = cart.Items.Sum(i => i.Price * i.Quantity);
+
+                if (subtotal < validCoupon.MinOrderAmount)
+                    throw new InvalidOperationException($"Minimum order amount of {validCoupon.MinOrderAmount:C} required");
+
+                // Calculate discount
+                decimal discount = 0;
+                if (validCoupon.IsPercentage)
+                {
+                    discount = subtotal * (validCoupon.Rate / 100);
+                }
+                else
+                {
+                    discount = validCoupon.Rate;
+                }
+
+                // Ensure discount doesn't exceed subtotal
+                discount = Math.Min(discount, subtotal);
+
+                cart.CouponCode = dto.CouponCode;
+                cart.DiscountAmount = discount;
+                cart.LastUpdated = DateTime.UtcNow;
+                _unitOfWork.Repository<Cart, int>().Update(cart);
+                await _unitOfWork.CompleteAsync();
+
+                // ✅ FIX: Reload cart
+                var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+                var cartDto = await MapCartToDto(updatedCart);
+
+                return new CartOperationResponseDto
+                {
+                    Success = true,
+                    Message = "Coupon applied successfully",
+                    Cart = cartDto
+                };
+            }
+
+            public async Task<CartOperationResponseDto> RemoveCouponAsync(string userId)
             {
-                Success = true,
-                Message = "Cart cleared successfully",
-                Cart = new CartDto
+                var spec = new CartWithItemsSpecification(userId);
+                var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+
+                if (cart == null)
+                    throw new KeyNotFoundException("Cart not found");
+
+                cart.CouponCode = null;
+                cart.DiscountAmount = 0;
+                cart.LastUpdated = DateTime.UtcNow;
+                _unitOfWork.Repository<Cart, int>().Update(cart);
+                await _unitOfWork.CompleteAsync();
+
+                // ✅ FIX: Reload cart
+                var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
+                var cartDto = await MapCartToDto(updatedCart);
+
+                return new CartOperationResponseDto
+                {
+                    Success = true,
+                    Message = "Coupon removed successfully",
+                    Cart = cartDto
+                };
+            }
+
+            private async Task RecalculateDiscount(Cart cart)
+            {
+                if (string.IsNullOrEmpty(cart.CouponCode))
+                {
+                    cart.DiscountAmount = 0;
+                    return;
+                }
+
+                var coupon = await _unitOfWork.Repository<Coupon, int>()
+                    .FindAsync(c => c.Code == cart.CouponCode && c.IsActive);
+
+                var validCoupon = coupon.FirstOrDefault();
+                if (validCoupon == null || (validCoupon.ExpiresAt.HasValue && validCoupon.ExpiresAt.Value < DateTime.UtcNow))
+                {
+                    cart.CouponCode = null;
+                    cart.DiscountAmount = 0;
+                    return;
+                }
+
+                var subtotal = cart.Items.Sum(i => i.Price * i.Quantity);
+
+                if (subtotal < validCoupon.MinOrderAmount)
+                {
+                    cart.CouponCode = null;
+                    cart.DiscountAmount = 0;
+                    return;
+                }
+
+                decimal discount = 0;
+                if (validCoupon.IsPercentage)
+                {
+                    discount = subtotal * (validCoupon.Rate / 100);
+                }
+                else
+                {
+                    discount = validCoupon.Rate;
+                }
+
+                cart.DiscountAmount = Math.Min(discount, subtotal);
+            }
+
+            private async Task<CartDto> MapCartToDto(Cart cart)
+            {
+                // ✅ FIX: Check if cart is null
+                if (cart == null)
+                {
+                    return null;
+                }
+
+                var subtotal = cart.Items?.Sum(i => i.Price * i.Quantity) ?? 0;
+                var total = subtotal - cart.DiscountAmount;
+
+                var cartDto = new CartDto
                 {
                     Id = cart.Id,
                     UserId = cart.UserId,
-                    CouponCode = null,
-                    DiscountAmount = 0,
-                    SubTotal = 0,
-                    Total = 0,
+                    CouponCode = cart.CouponCode,
+                    DiscountAmount = cart.DiscountAmount,
+                    SubTotal = subtotal,
+                    Total = total,
                     LastUpdated = cart.LastUpdated,
-                    Items = new List<CartItemDto>()
-                }
-            };
-        }
+                    Items = cart.Items?.Select(i => new CartItemDto
+                    {
+                        Id = i.Id,
+                        ProductId = i.ProductId,
+                        ProductName = i.Product?.Name ?? "Unknown Product",
+                        ProductPictureUrl = !string.IsNullOrEmpty(i.Product?.PictureUrl)
+                            ? DocumentSetting.GetFileUrl(i.Product.PictureUrl, "products", _configuration["BaseURL"])
+                            : null,
+                        Price = i.Price,
+                        Quantity = i.Quantity,
+                        Total = i.Price * i.Quantity,
+                        Stock = i.Product?.Stock ?? 0,
+                        BrandName = i.Product?.Brand?.Name ?? "Unknown Brand"
+                    }).ToList() ?? new List<CartItemDto>()
+                };
 
-        public async Task<CartOperationResponseDto> ApplyCouponAsync(string userId, ApplyCouponDto dto)
-        {
-            var spec = new CartWithItemsSpecification(userId);
-            var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
-
-            if (cart == null)
-                throw new KeyNotFoundException("Cart not found");
-
-            if (cart.Items == null || !cart.Items.Any())
-                throw new InvalidOperationException("Cart is empty");
-
-            // Validate coupon
-            var coupon = await _unitOfWork.Repository<Coupon, int>()
-                .FindAsync(c => c.Code == dto.CouponCode && c.IsActive);
-
-            var validCoupon = coupon.FirstOrDefault();
-            if (validCoupon == null)
-                throw new KeyNotFoundException("Invalid or inactive coupon code");
-
-            if (validCoupon.ExpiresAt.HasValue && validCoupon.ExpiresAt.Value < DateTime.UtcNow)
-                throw new InvalidOperationException("Coupon has expired");
-
-            var subtotal = cart.Items.Sum(i => i.Price * i.Quantity);
-
-            if (subtotal < validCoupon.MinOrderAmount)
-                throw new InvalidOperationException($"Minimum order amount of {validCoupon.MinOrderAmount:C} required");
-
-            // Calculate discount
-            decimal discount = 0;
-            if (validCoupon.IsPercentage)
-            {
-                discount = subtotal * (validCoupon.Rate / 100);
+                return cartDto;
             }
-            else
-            {
-                discount = validCoupon.Rate;
-            }
-
-            // Ensure discount doesn't exceed subtotal
-            discount = Math.Min(discount, subtotal);
-
-            cart.CouponCode = dto.CouponCode;
-            cart.DiscountAmount = discount;
-            cart.LastUpdated = DateTime.UtcNow;
-            _unitOfWork.Repository<Cart, int>().Update(cart);
-            await _unitOfWork.CompleteAsync();
-
-            // ✅ FIX: Reload cart
-            var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
-            var cartDto = await MapCartToDto(updatedCart);
-
-            return new CartOperationResponseDto
-            {
-                Success = true,
-                Message = "Coupon applied successfully",
-                Cart = cartDto
-            };
-        }
-
-        public async Task<CartOperationResponseDto> RemoveCouponAsync(string userId)
-        {
-            var spec = new CartWithItemsSpecification(userId);
-            var cart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
-
-            if (cart == null)
-                throw new KeyNotFoundException("Cart not found");
-
-            cart.CouponCode = null;
-            cart.DiscountAmount = 0;
-            cart.LastUpdated = DateTime.UtcNow;
-            _unitOfWork.Repository<Cart, int>().Update(cart);
-            await _unitOfWork.CompleteAsync();
-
-            // ✅ FIX: Reload cart
-            var updatedCart = await _unitOfWork.Repository<Cart, int>().GetWithSpecficationAsync(spec);
-            var cartDto = await MapCartToDto(updatedCart);
-
-            return new CartOperationResponseDto
-            {
-                Success = true,
-                Message = "Coupon removed successfully",
-                Cart = cartDto
-            };
-        }
-
-        private async Task RecalculateDiscount(Cart cart)
-        {
-            if (string.IsNullOrEmpty(cart.CouponCode))
-            {
-                cart.DiscountAmount = 0;
-                return;
-            }
-
-            var coupon = await _unitOfWork.Repository<Coupon, int>()
-                .FindAsync(c => c.Code == cart.CouponCode && c.IsActive);
-
-            var validCoupon = coupon.FirstOrDefault();
-            if (validCoupon == null || (validCoupon.ExpiresAt.HasValue && validCoupon.ExpiresAt.Value < DateTime.UtcNow))
-            {
-                cart.CouponCode = null;
-                cart.DiscountAmount = 0;
-                return;
-            }
-
-            var subtotal = cart.Items.Sum(i => i.Price * i.Quantity);
-
-            if (subtotal < validCoupon.MinOrderAmount)
-            {
-                cart.CouponCode = null;
-                cart.DiscountAmount = 0;
-                return;
-            }
-
-            decimal discount = 0;
-            if (validCoupon.IsPercentage)
-            {
-                discount = subtotal * (validCoupon.Rate / 100);
-            }
-            else
-            {
-                discount = validCoupon.Rate;
-            }
-
-            cart.DiscountAmount = Math.Min(discount, subtotal);
-        }
-
-        private async Task<CartDto> MapCartToDto(Cart cart)
-        {
-            // ✅ FIX: Check if cart is null
-            if (cart == null)
-            {
-                return null;
-            }
-
-            var subtotal = cart.Items?.Sum(i => i.Price * i.Quantity) ?? 0;
-            var total = subtotal - cart.DiscountAmount;
-
-            var cartDto = new CartDto
-            {
-                Id = cart.Id,
-                UserId = cart.UserId,
-                CouponCode = cart.CouponCode,
-                DiscountAmount = cart.DiscountAmount,
-                SubTotal = subtotal,
-                Total = total,
-                LastUpdated = cart.LastUpdated,
-                Items = cart.Items?.Select(i => new CartItemDto
-                {
-                    Id = i.Id,
-                    ProductId = i.ProductId,
-                    ProductName = i.Product?.Name ?? "Unknown Product",
-                    ProductPictureUrl = !string.IsNullOrEmpty(i.Product?.PictureUrl)
-                        ? DocumentSetting.GetFileUrl(i.Product.PictureUrl, "products", _configuration["BaseURL"])
-                        : null,
-                    Price = i.Price,
-                    Quantity = i.Quantity,
-                    Total = i.Price * i.Quantity,
-                    Stock = i.Product?.Stock ?? 0,
-                    BrandName = i.Product?.Brand?.Name ?? "Unknown Brand"
-                }).ToList() ?? new List<CartItemDto>()
-            };
-
-            return cartDto;
         }
     }
-}

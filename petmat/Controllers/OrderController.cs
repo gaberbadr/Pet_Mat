@@ -23,9 +23,7 @@ namespace petmat.Controllers
         private string GetUserId() => User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
         private string GetUserEmail() => User.FindFirstValue(ClaimTypes.Email);
 
-        /// <summary>
         /// Create order (Works for both Online and Cash on Delivery)
-        /// </summary>
         [HttpPost]
         [ProducesResponseType(typeof(OrderDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
@@ -51,9 +49,8 @@ namespace petmat.Controllers
             }
         }
 
-        /// <summary>
+
         /// Create payment intent (for online payment only)
-        /// </summary>
         [HttpPost("payment-intent")]
         [ProducesResponseType(typeof(PaymentIntentResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
@@ -71,9 +68,8 @@ namespace petmat.Controllers
             }
         }
 
-        /// <summary>
+
         /// Get order by ID
-        /// </summary>
         [HttpGet("{orderId}")]
         [ProducesResponseType(typeof(OrderDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -91,9 +87,8 @@ namespace petmat.Controllers
             }
         }
 
-        /// <summary>
+
         /// Get all orders for current user
-        /// </summary>
         [HttpGet("my-orders")]
         [ProducesResponseType(typeof(OrderListDto), StatusCodes.Status200OK)]
         public async Task<ActionResult<OrderListDto>> GetMyOrders()
@@ -103,9 +98,32 @@ namespace petmat.Controllers
             return Ok(result);
         }
 
-        /// <summary>
+
+        /// Validate if order exists for payment intent (called before completing payment)
+        [HttpGet("validate-payment/{paymentIntentId}")]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<bool>> ValidateOrderForPayment(string paymentIntentId)
+        {
+            try
+            {
+                var orderExists = await _orderService.ValidateOrderExistsForPaymentAsync(paymentIntentId);
+
+                if (!orderExists)
+                {
+                    return NotFound(new ApiErrorResponse(404, "No order found for this payment intent. Please create your order first."));
+                }
+
+                return Ok(new { exists = true, message = "Order found, you can proceed with payment" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
+
+
         /// Get all delivery methods
-        /// </summary>
         [HttpGet("delivery-methods")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(DeliveryMethodListDto), StatusCodes.Status200OK)]

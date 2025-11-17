@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using CoreLayer;
 using CoreLayer.Dtos.Orders;
 using CoreLayer.Entities.Carts;
-using CoreLayer.Entities.Foods;
 using CoreLayer.Entities.Orders;
 using CoreLayer.Enums;
 using CoreLayer.Service_Interface.Orders;
@@ -16,7 +14,6 @@ using Stripe;
 
 namespace ServiceLayer.Services.Orders
 {
-
     public class PaymentService : IPaymentService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -181,21 +178,6 @@ namespace ServiceLayer.Services.Orders
             };
         }
 
-        public async Task<bool> VerifyPaymentIntentAsync(string paymentIntentId)
-        {
-            try
-            {
-                StripeConfiguration.ApiKey = _configuration["Stripe:Secretkey"];
-                var service = new PaymentIntentService();
-                var paymentIntent = await service.GetAsync(paymentIntentId);
-
-                return paymentIntent.Status == "succeeded";
-            }
-            catch (StripeException)
-            {
-                return false;
-            }
-        }
 
         public async Task<OrderDto> UpdatePaymentIntentStatusAsync(string paymentIntentId, bool isSuccessful)
         {
@@ -203,12 +185,15 @@ namespace ServiceLayer.Services.Orders
             var order = await _unitOfWork.Repository<Order, int>().GetWithSpecficationAsync(spec);
 
             if (order == null)
-                throw new KeyNotFoundException("Order not found for this payment intent");
+                throw new KeyNotFoundException($"Order not found for payment intent: {paymentIntentId}");
 
+            // Update status based on payment result
             order.Status = isSuccessful ? OrderStatus.Processing : OrderStatus.Cancelled;
+
             _unitOfWork.Repository<Order, int>().Update(order);
             await _unitOfWork.CompleteAsync();
 
+            // Return updated order details
             var detailSpec = new AdminOrderByIdSpecification(order.Id);
             order = await _unitOfWork.Repository<Order, int>().GetWithSpecficationAsync(detailSpec);
 

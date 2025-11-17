@@ -28,12 +28,12 @@ namespace CoreLayer.Enums
 
     public enum OrderStatus
     {
-        Pending,
+        Pending,           // For Cash on Delivery orders
+        PendingPayment,    // For Online orders awaiting payment
         Processing,
         Shipped,
         Delivered,
-        Cancelled,
-        Refunded
+        Cancelled
     }
 
 
