@@ -15,9 +15,9 @@ namespace RepositoryLayer.Data.Configurations.Community
         public void Configure(EntityTypeBuilder<Post> builder)
         {
             builder.HasOne(p => p.User)
-                     .WithMany(u => u.Posts)
-                     .HasForeignKey(p => p.UserId)
-                     .OnDelete(DeleteBehavior.Restrict);
+                .WithMany(u => u.Posts)
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(p => p.Species)
                 .WithMany(s => s.Posts)
@@ -27,6 +27,7 @@ namespace RepositoryLayer.Data.Configurations.Community
             builder.HasIndex(p => p.UserId);
             builder.HasIndex(p => p.IsActive);
             builder.HasIndex(p => p.CreatedAt);
+            builder.HasIndex(p => p.SpeciesId);
         }
     }
 }

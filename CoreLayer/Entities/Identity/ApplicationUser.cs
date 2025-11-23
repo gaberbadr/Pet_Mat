@@ -11,6 +11,7 @@ using CoreLayer.Entities.Carts;
 using CoreLayer.Entities.Community;
 using CoreLayer.Entities.Doctors;
 using CoreLayer.Entities.Messages;
+using CoreLayer.Entities.Notifications;
 using CoreLayer.Entities.Orders;
 using CoreLayer.Entities.Pharmacies;
 using Microsoft.AspNetCore.Identity;
@@ -64,5 +65,6 @@ namespace CoreLayer.Entities.Identity
         public ICollection<UserConnection> UserConnections { get; set; }
         public ICollection<UserBlock> BlocksInitiated { get; set; }
         public ICollection<UserBlock> BlocksReceived { get; set; }
+        public ICollection<Notification> Notifications { get; set; }
     }
 }

@@ -15,9 +15,9 @@ namespace RepositoryLayer.Data.Configurations.Identity
         {
 
             builder.HasOne(ub => ub.Blocker)
-                    .WithMany(u => u.BlocksInitiated)
-                    .HasForeignKey(ub => ub.BlockerId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                .WithMany(u => u.BlocksInitiated)
+                .HasForeignKey(ub => ub.BlockerId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(ub => ub.Blocked)
                 .WithMany(u => u.BlocksReceived)
@@ -27,6 +27,8 @@ namespace RepositoryLayer.Data.Configurations.Identity
             builder.HasIndex(ub => new { ub.BlockerId, ub.BlockedId })
                 .IsUnique()
                 .HasFilter("[IsActive] = 1");
+
+            builder.HasIndex(ub => ub.IsActive);
         }
     }
 }

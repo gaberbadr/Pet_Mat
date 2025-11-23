@@ -108,6 +108,7 @@ namespace CoreLayer.Enums
         public enum MessageContextType
         {
             General,
+            Post,
             AnimalListing,
             AccessoryListing,
             PharmacyStore,

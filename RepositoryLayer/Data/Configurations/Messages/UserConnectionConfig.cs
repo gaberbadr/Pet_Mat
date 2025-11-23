@@ -15,10 +15,11 @@ namespace RepositoryLayer.Data.Configurations.Messages
         public void Configure(EntityTypeBuilder<UserConnection> builder)
         {
             builder.HasOne(uc => uc.User)
-                   .WithMany(u => u.UserConnections)
-                   .HasForeignKey(uc => uc.UserId)
-                   .OnDelete(DeleteBehavior.Cascade);
+                 .WithMany(u => u.UserConnections)
+                 .HasForeignKey(uc => uc.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
 
+            builder.HasIndex(uc => uc.ConnectionId).IsUnique();
             builder.HasIndex(uc => uc.UserId);
             builder.HasIndex(uc => uc.IsActive);
         }

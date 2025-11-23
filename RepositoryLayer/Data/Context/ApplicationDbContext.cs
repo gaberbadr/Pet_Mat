@@ -12,6 +12,7 @@ using CoreLayer.Entities.Doctors;
 using CoreLayer.Entities.Foods;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Entities.Messages;
+using CoreLayer.Entities.Notifications;
 using CoreLayer.Entities.Orders;
 using CoreLayer.Entities.Pharmacies;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -68,8 +69,9 @@ namespace RepositoryLayer.Data.Context
         public DbSet<Message> Messages { get; set; }
         public DbSet<UserConnection> UserConnections { get; set; }
         public DbSet<LoginAttempt> LoginAttempts { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
 
 
-    }
+        }
 }

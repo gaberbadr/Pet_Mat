@@ -11,6 +11,7 @@ using CoreLayer.Entities.Identity;
 using CoreLayer.Enums;
 using CoreLayer.Helper.Documents;
 using CoreLayer.Service_Interface.Admin;
+using CoreLayer.Service_Interface.Notification;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 
@@ -22,17 +23,19 @@ namespace ServiceLayer.Services.Admin
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
+        private readonly INotificationService _notificationService;
 
         public AdminDoctorApplicationManagement(
             IUnitOfWork unitOfWork,
             UserManager<ApplicationUser> userManager,
             IMapper mapper,
-            IConfiguration configuration)
+            IConfiguration configuration,INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _mapper = mapper;
             _configuration = configuration;
+            _notificationService = notificationService;
         }
 
 
@@ -194,7 +197,19 @@ namespace ServiceLayer.Services.Admin
                 if (!await _userManager.IsInRoleAsync(user, "Doctor"))
                 {
                     await _userManager.AddToRoleAsync(user, "Doctor");
+                    await _notificationService.AddNotificationAsync(application.UserId, "🎉 Congratulations! Your request has been approved and you are now a Doctor.");
                 }
+            }
+            else if (dto.Status == ApplicationStatus.Rejected)
+            {
+                string reasonText = string.IsNullOrWhiteSpace(dto.RejectionReason)
+                    ? ""
+                    : $"\nReason: {dto.RejectionReason}";
+
+                await _notificationService.AddNotificationAsync(
+                    application.UserId,
+                    $"❌ Your doctor application has been rejected.{reasonText}"
+                );
             }
 
             await _unitOfWork.CompleteAsync();

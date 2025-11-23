@@ -15,9 +15,9 @@ namespace RepositoryLayer.Data.Configurations.Community
         public void Configure(EntityTypeBuilder<Comment> builder)
         {
             builder.HasOne(c => c.User)
-                    .WithMany(u => u.Comments)
-                    .HasForeignKey(c => c.UserId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                .WithMany(u => u.Comments)
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(c => c.Post)
                 .WithMany(p => p.Comments)
@@ -31,6 +31,7 @@ namespace RepositoryLayer.Data.Configurations.Community
 
             builder.HasIndex(c => c.PostId);
             builder.HasIndex(c => c.ParentCommentId);
+            builder.HasIndex(c => c.CreatedAt);
         }
     }
 }

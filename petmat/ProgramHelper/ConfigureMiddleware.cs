@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.FileProviders;
+using petmat.Hubs;
 using petmat.Middleware;
 
 namespace petmat.ProgramHelper
@@ -7,10 +8,9 @@ namespace petmat.ProgramHelper
     {
         public static async Task<WebApplication> ConfigureMiddlewaresAsync(this WebApplication app)
         {
-            // Use CORS first
+            // ORDER MATTERS - CORS must be first!
             app.UseCors("AllowAll");
 
-            // Configure Swagger
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -18,7 +18,6 @@ namespace petmat.ProgramHelper
             }
             else
             {
-                // Always enable Swagger for easy testing in production
                 app.UseSwagger();
                 app.UseSwaggerUI(c =>
                 {
@@ -28,18 +27,12 @@ namespace petmat.ProgramHelper
             }
 
             app.UseHttpsRedirection();
-            app.UseRouting();
-            app.UseRateLimiter();
-            app.UseAuthentication();
-            app.UseAuthorization();
 
-            // Enable serving static files from wwwroot
+            // Enable serving static files
             app.UseStaticFiles();
 
-            // Configure file serving with proper MIME types
+            // Configure file serving
             var filesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files");
-
-            // Create directory if it doesn't exist
             if (!Directory.Exists(filesPath))
             {
                 Directory.CreateDirectory(filesPath);
@@ -60,7 +53,6 @@ namespace petmat.ProgramHelper
                 {
                     var fileExtension = Path.GetExtension(context.File.Name).ToLowerInvariant();
 
-                    // Block if not in allowed list
                     if (!allowedExtensions.Contains(fileExtension))
                     {
                         context.Context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -69,8 +61,7 @@ namespace petmat.ProgramHelper
                         return;
                     }
 
-                    // Set caching headers for 1 year and correct MIME type
-                    context.Context.Response.Headers["Cache-Control"] = "public, max-age=31536000"; // 1 year cache
+                    context.Context.Response.Headers["Cache-Control"] = "public, max-age=31536000";
                     context.Context.Response.ContentType = fileExtension switch
                     {
                         ".jpg" or ".jpeg" => "image/jpeg",
@@ -94,13 +85,29 @@ namespace petmat.ProgramHelper
                 }
             });
 
-            // Custom middleware - MUST come before UseStatusCodePages
+            app.UseRouting();
+
+            // Rate limiter BEFORE authentication
+            app.UseRateLimiter();
+
+            // Authentication/Authorization BEFORE custom middleware
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            // Custom middleware
             app.UseMiddleware<ExceptionMiddleware>();
             app.UseMiddleware<UserActiveStatusMiddleware>();
             app.UseMiddleware<SecurityHeadersMiddleware>();
 
-            // Status code pages - this will catch 404s and redirect to /error/{statusCode}
+            // Status code pages
             app.UseStatusCodePagesWithReExecute("/error/{0}");
+
+            // ⚠Map endpoints at the end
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapHub<ChatHub>("/chatHub"); // SignalR Hub
+            });
 
             return app;
         }

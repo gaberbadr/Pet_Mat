@@ -9,6 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Google.Apis.Auth" Version="1.70.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.19" />
+	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="8.0.11" />
+	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.1.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.19" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.19">
       <PrivateAssets>all</PrivateAssets>
@@ -21,6 +23,7 @@
   <ItemGroup>
     <Folder Include="wwwroot\files\accessory-listings\" />
     <Folder Include="wwwroot\files\animals\" />
+    <Folder Include="wwwroot\files\doctor-documents\" />
     <Folder Include="wwwroot\files\documents\" />
     <Folder Include="wwwroot\files\images\" />
     <Folder Include="wwwroot\files\pharmacy-documents\" />

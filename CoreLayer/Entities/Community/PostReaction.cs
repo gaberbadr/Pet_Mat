@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Enums;
 
 namespace CoreLayer.Entities.Community
 {
@@ -18,8 +19,7 @@ namespace CoreLayer.Entities.Community
         public int PostId { get; set; }
 
         [Required]
-        [MaxLength(50)]
-        public string Type { get; set; }
+        public ReactionType Type { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

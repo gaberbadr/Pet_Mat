@@ -405,6 +405,8 @@ namespace RepositoryLayer.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("ParentCommentId");
 
                     b.HasIndex("PostId");
@@ -1041,6 +1043,8 @@ namespace RepositoryLayer.Migrations
 
                     b.HasIndex("BlockedId");
 
+                    b.HasIndex("IsActive");
+
                     b.HasIndex("BlockerId", "BlockedId")
                         .IsUnique()
                         .HasFilter("[IsActive] = 1");
@@ -1078,7 +1082,6 @@ namespace RepositoryLayer.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("MediaUrl")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -1099,6 +1102,8 @@ namespace RepositoryLayer.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ContextType");
 
                     b.HasIndex("IsRead");
 
@@ -1142,11 +1147,45 @@ namespace RepositoryLayer.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ConnectionId")
+                        .IsUnique();
+
                     b.HasIndex("IsActive");
 
                     b.HasIndex("UserId");
 
                     b.ToTable("UserConnections");
+                });
+
+            modelBuilder.Entity("CoreLayer.Entities.Notifications.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsRead");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("CoreLayer.Entities.Orders.Coupon", b =>
@@ -2084,6 +2123,17 @@ namespace RepositoryLayer.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("CoreLayer.Entities.Notifications.Notification", b =>
+                {
+                    b.HasOne("CoreLayer.Entities.Identity.ApplicationUser", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CoreLayer.Entities.Orders.Order", b =>
                 {
                     b.HasOne("CoreLayer.Entities.Carts.Cart", "Cart")
@@ -2354,6 +2404,8 @@ namespace RepositoryLayer.Migrations
                         .IsRequired();
 
                     b.Navigation("DoctorRatingsGiven");
+
+                    b.Navigation("Notifications");
 
                     b.Navigation("Orders");
 
