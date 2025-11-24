@@ -7,6 +7,7 @@
 
 
 /*This makes the image up to date, meaning when you run the command prompt (cmd), it downloads the image, updates it if you have it installed, and doesn't do anything if it's already popular.*/
+
 docker compose -f docker-compose-production.yml pull && docker compose -f docker-compose-production.yml up -d --force-recreate
 
 

@@ -124,7 +124,6 @@ namespace ServiceLayer.Services.Messag
                 MessageType.Image => "messages/photos",
                 MessageType.Video => "messages/videos",
                 MessageType.Document => "messages/documents",
-                MessageType.Location => "messages",
                 _ => "messages"
             };
         }

@@ -101,7 +101,7 @@ namespace petmat.Hubs
                 var conversations = await _messagingService.GetConversationsAsync(userId);
                 await Clients.Caller.SendAsync("LoadConversations", conversations);
 
-                _logger.LogInformation($"✅ User {userId} connected: {Context.ConnectionId}");
+                _logger.LogInformation($" User {userId} connected: {Context.ConnectionId}");
             }
             catch (Exception ex)
             {

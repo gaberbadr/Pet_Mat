@@ -99,8 +99,7 @@ namespace CoreLayer.Enums
             Text,
             Image,
             Video,
-            Document,
-            Location
+            Document
     }
 
         // ==================== MESSAGE CONTEXT TYPE ====================
