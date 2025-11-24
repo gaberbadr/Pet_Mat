@@ -94,7 +94,7 @@ namespace petmat
                 var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
                 var unitOfWork = services.GetRequiredService<IUnitOfWork>();
 
-                await IdentitySeeder.SeedAppUserAsync(userManager, roleManager, unitOfWork);
+                await IdentitySeeder.SeedAppUserAsync(userManager, roleManager);
 
                 await DataSeeder.SeedDeliveryMethodsAsync(unitOfWork);
                 await DataSeeder.SeedProductBrandsAsync(unitOfWork);

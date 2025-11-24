@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using CoreLayer.Dtos.Messag;
 using CoreLayer.Entities.Identity;
 using CoreLayer.Entities.Messages;
@@ -27,10 +26,7 @@ namespace petmat.Hubs
         private readonly IConfiguration _configuration;
         private readonly ILogger<ChatHub> _logger;
 
-        // ✅ OPTIMIZED: Store only userId -> single ConnectionId (last connection)
-        // When user connects from multiple devices, we keep only the latest active connection
         private static readonly ConcurrentDictionary<string, string> _onlineUsers = new();
-        private static readonly object _lock = new object();
 
         public ChatHub(
             ApplicationDbContext context,
@@ -59,44 +55,40 @@ namespace petmat.Hubs
 
             try
             {
-                // ✅ OPTIMIZED: Reuse existing connection or create new one
-                var existingConnection = await _context.UserConnections
-                    .FirstOrDefaultAsync(c => c.UserId == userId && c.IsActive);
+                // Mark all old connections as inactive first
+                var oldConnections = await _context.UserConnections
+                    .Where(c => c.UserId == userId && c.IsActive)
+                    .ToListAsync();
 
-                if (existingConnection != null)
+                foreach (var oldConn in oldConnections)
                 {
-                    // Update existing connection
-                    existingConnection.ConnectionId = Context.ConnectionId;
-                    existingConnection.ConnectedAt = DateTime.UtcNow;
-                    existingConnection.DisconnectedAt = null;
-                    _context.UserConnections.Update(existingConnection);
-                }
-                else
-                {
-                    // Create new connection
-                    var connection = new UserConnection
-                    {
-                        ConnectionId = Context.ConnectionId,
-                        UserId = userId,
-                        ConnectedAt = DateTime.UtcNow,
-                        IsActive = true
-                    };
-                    await _context.UserConnections.AddAsync(connection);
+                    oldConn.IsActive = false;
+                    oldConn.DisconnectedAt = DateTime.UtcNow;
                 }
 
+                //  Create new active connection
+                var connection = new UserConnection
+                {
+                    ConnectionId = Context.ConnectionId,
+                    UserId = userId,
+                    ConnectedAt = DateTime.UtcNow,
+                    IsActive = true
+                };
+
+                await _context.UserConnections.AddAsync(connection);
                 await _context.SaveChangesAsync();
 
-                // ✅ OPTIMIZED: Store single connection per user
+                // Cleanup old connections immediately (keep only last 3)
+                await CleanupOldConnectionsAsync(userId);
+
                 _onlineUsers[userId] = Context.ConnectionId;
 
-                // Broadcast online status
                 await Clients.All.SendAsync("UserOnlineStatus", new
                 {
                     UserId = userId,
                     IsOnline = true
                 });
 
-                // Send unread counts
                 var unreadMessages = await _messagingService.GetUnreadCountAsync(userId);
                 var unreadNotifications = await _notificationService.GetUnreadCountAsync(userId);
 
@@ -106,7 +98,6 @@ namespace petmat.Hubs
                     UnreadNotificationsCount = unreadNotifications
                 });
 
-                // Send conversations list
                 var conversations = await _messagingService.GetConversationsAsync(userId);
                 await Clients.Caller.SendAsync("LoadConversations", conversations);
 
@@ -128,7 +119,6 @@ namespace petmat.Hubs
             {
                 try
                 {
-                    // ✅ OPTIMIZED: Mark connection as inactive and set disconnection time
                     var connection = await _context.UserConnections
                         .FirstOrDefaultAsync(c => c.ConnectionId == Context.ConnectionId);
 
@@ -140,10 +130,8 @@ namespace petmat.Hubs
                         await _context.SaveChangesAsync();
                     }
 
-                    // Remove from online users dictionary
                     _onlineUsers.TryRemove(userId, out _);
 
-                    // Broadcast offline status
                     await Clients.All.SendAsync("UserOnlineStatus", new
                     {
                         UserId = userId,
@@ -151,9 +139,9 @@ namespace petmat.Hubs
                         LastSeen = DateTime.UtcNow
                     });
 
-                    _logger.LogInformation($"❌ User {userId} disconnected: {Context.ConnectionId}");
+                    _logger.LogInformation($"⌛ User {userId} disconnected: {Context.ConnectionId}");
 
-                    // ✅ CLEANUP: Delete old inactive connections (keep only last 5 per user)
+                    //  Cleanup happens here
                     await CleanupOldConnectionsAsync(userId);
                 }
                 catch (Exception ex)
@@ -165,7 +153,7 @@ namespace petmat.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        // ✅ CLEANUP: Keep only the last 5 connections per user
+        //  Keep only last 3 connections per user
         private async Task CleanupOldConnectionsAsync(string userId)
         {
             try
@@ -173,7 +161,7 @@ namespace petmat.Hubs
                 var connectionsToDelete = await _context.UserConnections
                     .Where(c => c.UserId == userId && !c.IsActive)
                     .OrderByDescending(c => c.DisconnectedAt ?? c.ConnectedAt)
-                    .Skip(5) // Keep last 5
+                    .Skip(3) // Keep last 3 inactive
                     .ToListAsync();
 
                 if (connectionsToDelete.Any())
@@ -188,8 +176,6 @@ namespace petmat.Hubs
                 _logger.LogError(ex, $"Error cleaning up connections for user {userId}");
             }
         }
-
-        // ==================== LOAD CONVERSATION WITH PAGINATION ====================
 
         public async Task LoadConversation(string otherUserId, int pageIndex = 1, int pageSize = 20)
         {
@@ -244,8 +230,6 @@ namespace petmat.Hubs
             }
         }
 
-        // ==================== SEND MESSAGE (TEXT ONLY) ====================
-
         public async Task SendPrivateMessage(
             string receiverId,
             string message,
@@ -263,98 +247,54 @@ namespace petmat.Hubs
 
             try
             {
-                // Check if users are blocked
-                var isBlocked = await _messagingService.IsUserBlockedAsync(senderId, receiverId);
-                if (isBlocked)
-                {
-                    await Clients.Caller.SendAsync("Error", "You cannot send messages to this user");
-                    return;
-                }
-
-                // Verify receiver exists
-                var receiver = await _userManager.FindByIdAsync(receiverId);
-                if (receiver == null || !receiver.IsActive)
-                {
-                    await Clients.Caller.SendAsync("Error", "User not found");
-                    return;
-                }
-
-                var sender = await _userManager.FindByIdAsync(senderId);
-                if (sender == null)
-                {
-                    await Clients.Caller.SendAsync("Error", "Sender not found");
-                    return;
-                }
-
-                // Parse message type
+                // When sending via Hub we delegate to the messaging service to ensure
+                // upload, media url and mapping logic remain consistent.
                 if (!Enum.TryParse<MessageType>(messageType, true, out var msgType))
                 {
                     msgType = MessageType.Text;
                 }
 
-                // Parse context type
                 var messageContextType = MessageContextType.General;
                 if (!string.IsNullOrEmpty(contextType))
                 {
                     Enum.TryParse(contextType, true, out messageContextType);
                 }
 
-                // Create message entity
-                var messageEntity = new Message
+                // Only text messages should be sent via this hub method (no file streaming here).
+                // For media messages prefer the HTTP endpoint (/api/messaging/send) which handles file upload.
+                if (msgType != MessageType.Text)
                 {
+                    await Clients.Caller.SendAsync("Error", "Media messages must be sent using the HTTP upload endpoint");
+                    return;
+                }
+
+                var dto = new SendMessageDto
+                {
+                    ReceiverId = receiverId,
                     Content = message.Trim(),
                     Type = msgType,
-                    MediaUrl = null,
-                    SentAt = DateTime.UtcNow,
-                    SenderId = senderId,
-                    ReceiverId = receiverId,
                     ContextType = messageContextType,
-                    ContextId = contextId,
-                    IsRead = false,
-                    IsDeleted = false,
-                    CreatedAt = DateTime.UtcNow
+                    ContextId = contextId
                 };
 
-                await _context.Messages.AddAsync(messageEntity);
-                await _context.SaveChangesAsync();
+                var result = await _messagingService.SendMessageAsync(senderId, dto);
 
-                var baseUrl = _configuration["BaseURL"];
-                var contextInfo = contextId.HasValue
-                    ? await _messagingService.GetMessageContextInfoAsync(messageContextType, contextId)
-                    : null;
-
-                var messageData = new
+                if (result == null || !result.Success)
                 {
-                    Id = messageEntity.Id,
-                    Content = messageEntity.Content,
-                    Type = msgType.ToString(),
-                    MediaUrl = (string)null,
-                    SentAt = messageEntity.SentAt,
-                    SenderId = senderId,
-                    SenderName = $"{sender.FirstName} {sender.LastName}",
-                    SenderProfilePicture = !string.IsNullOrEmpty(sender.ProfilePicture)
-                        ? DocumentSetting.GetFileUrl(sender.ProfilePicture, "profiles", baseUrl)
-                        : null,
-                    ReceiverId = receiverId,
-                    ReceiverName = $"{receiver.FirstName} {receiver.LastName}",
-                    ReceiverProfilePicture = !string.IsNullOrEmpty(receiver.ProfilePicture)
-                        ? DocumentSetting.GetFileUrl(receiver.ProfilePicture, "profiles", baseUrl)
-                        : null,
-                    IsRead = false,
-                    ContextType = messageContextType.ToString(),
-                    ContextId = contextId,
-                    ContextInfo = contextInfo
-                };
+                    await Clients.Caller.SendAsync("Error", "Failed to send message");
+                    return;
+                }
 
-                // Send to both users
+                var messageData = result.MessageData;
+
+                // send to sender and receiver
                 await Clients.Caller.SendAsync("ReceivePrivateMessage", messageData);
                 await Clients.User(receiverId).SendAsync("ReceivePrivateMessage", messageData);
 
-                // Update unread count
+                // update unread counts and conversations
                 var unreadCount = await _messagingService.GetUnreadCountAsync(receiverId);
                 await Clients.User(receiverId).SendAsync("UnreadMessagesCount", unreadCount);
 
-                // Update conversations
                 var senderConversations = await _messagingService.GetConversationsAsync(senderId);
                 await Clients.User(senderId).SendAsync("ConversationsUpdated", senderConversations);
 
@@ -367,8 +307,6 @@ namespace petmat.Hubs
                 await Clients.Caller.SendAsync("Error", "Failed to send message");
             }
         }
-
-        // ==================== MARK AS READ ====================
 
         public async Task MarkMessageAsRead(int messageId)
         {
@@ -429,8 +367,6 @@ namespace petmat.Hubs
             }
         }
 
-        // ==================== BLOCKING ====================
-
         public async Task BlockUser(string userId)
         {
             var currentUserId = Context.UserIdentifier;
@@ -478,8 +414,6 @@ namespace petmat.Hubs
                 await Clients.Caller.SendAsync("Error", ex.Message);
             }
         }
-
-        // ==================== ONLINE STATUS ====================
 
         public async Task CheckUserOnlineStatus(string userId)
         {

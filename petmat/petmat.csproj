@@ -26,6 +26,8 @@
     <Folder Include="wwwroot\files\doctor-documents\" />
     <Folder Include="wwwroot\files\documents\" />
     <Folder Include="wwwroot\files\images\" />
+    <Folder Include="wwwroot\files\messages\photos\" />
+    <Folder Include="wwwroot\files\messages\videos\" />
     <Folder Include="wwwroot\files\pharmacy-documents\" />
     <Folder Include="wwwroot\files\pharmacy-listings\" />
     <Folder Include="wwwroot\files\products\" />

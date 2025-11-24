@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using petmat.Errors;
+using Microsoft.AspNetCore.SignalR;
+using petmat.Hubs;
 
 namespace petmat.Controllers
 {
@@ -17,15 +19,18 @@ namespace petmat.Controllers
         private readonly IMessagingService _messagingService;
         private readonly IConfiguration _configuration;
         private readonly ILogger<MessagingController> _logger;
+        private readonly IHubContext<ChatHub> _hubContext;
 
         public MessagingController(
             IMessagingService messagingService,
             IConfiguration configuration,
-            ILogger<MessagingController> logger)
+            ILogger<MessagingController> logger,
+            IHubContext<ChatHub> hubContext)
         {
             _messagingService = messagingService;
             _configuration = configuration;
             _logger = logger;
+            _hubContext = hubContext;
         }
 
         private string GetUserId() =>
@@ -56,9 +61,8 @@ namespace petmat.Controllers
 
         // ==================== SEND MESSAGE WITH FILE ====================
 
-        /// <summary>
+
         /// Send a message with optional media file (image, video, document)
-        /// </summary>
         [HttpPost("send")]
         [RequestSizeLimit(100 * 1024 * 1024)] // 100MB limit
         [ProducesResponseType(typeof(MessageOperationResponseDto), StatusCodes.Status200OK)]
@@ -94,6 +98,29 @@ namespace petmat.Controllers
                 }
 
                 var result = await _messagingService.SendMessageAsync(userId, dto);
+
+                // Broadcast result via SignalR so recipient and sender update instantly (media URL will be included)
+                if (result != null && result.Success)
+                {
+                    var messageData = result.MessageData;
+                    if (messageData != null)
+                    {
+                        // Send to sender
+                        await _hubContext.Clients.User(userId).SendAsync("ReceivePrivateMessage", messageData);
+                        // Send to receiver
+                        await _hubContext.Clients.User(dto.ReceiverId).SendAsync("ReceivePrivateMessage", messageData);
+
+                        var unreadCount = await _messagingService.GetUnreadCountAsync(dto.ReceiverId);
+                        await _hubContext.Clients.User(dto.ReceiverId).SendAsync("UnreadMessagesCount", unreadCount);
+
+                        var senderConversations = await _messagingService.GetConversationsAsync(userId);
+                        await _hubContext.Clients.User(userId).SendAsync("ConversationsUpdated", senderConversations);
+
+                        var receiverConversations = await _messagingService.GetConversationsAsync(dto.ReceiverId);
+                        await _hubContext.Clients.User(dto.ReceiverId).SendAsync("ConversationsUpdated", receiverConversations);
+                    }
+                }
+
                 return Ok(result);
             }
             catch (InvalidOperationException ex)

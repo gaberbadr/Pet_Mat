@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using CoreLayer;
 using CoreLayer.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 
@@ -13,10 +10,9 @@ namespace RepositoryLayer.Data.Data_seeding
     {
         public static async Task SeedAppUserAsync(
             UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole> roleManager,
-            IUnitOfWork unitOfWork)
+            RoleManager<IdentityRole> roleManager)
         {
-            // 1. Ensure roles exist
+            // 1. Create roles
             string[] roles = { "Admin", "Doctor", "Pharmacy", "AdminAssistant" };
 
             foreach (var role in roles)
@@ -27,19 +23,9 @@ namespace RepositoryLayer.Data.Data_seeding
                 }
             }
 
-            // 2. Seed user if no users exist
+            // 2. Create Admin user if no users exist
             if (!userManager.Users.Any())
             {
-                // create and save new address first
-                var newAddress = new Address
-                {
-                    City = "System",
-                    Government = "System",
-                };
-
-                await unitOfWork.Repository<Address, int>().AddAsync(newAddress);
-                await unitOfWork.CompleteAsync(); // make sure Id is generated
-
                 var user = new ApplicationUser
                 {
                     UserName = "gaberemadbader@gmail.com",
@@ -48,22 +34,25 @@ namespace RepositoryLayer.Data.Data_seeding
                     LastName = "Badr",
                     Email = "gaberemadbader@gmail.com",
                     EmailConfirmed = true,
-                    AddressId = newAddress.Id,
-                    HasPasswordAsync = true
+                    HasPasswordAsync = true,
+
+                    // Address added INSIDE Identity context
+                    Address = new Address
+                    {
+                        City = "System",
+                        Government = "System"
+                    }
                 };
 
-                // 3. Create the user with password
-                var result = await userManager.CreateAsync(user, "Admin@123");
+                var createResult = await userManager.CreateAsync(user, "Admin@123");
 
-                if (result.Succeeded)
+                if (createResult.Succeeded)
                 {
-                    // 4. Assign the Admin role
                     await userManager.AddToRoleAsync(user, "Admin");
                 }
                 else
                 {
-                    // log errors if user creation failed
-                    foreach (var error in result.Errors)
+                    foreach (var error in createResult.Errors)
                     {
                         Console.WriteLine($"Error: {error.Code} - {error.Description}");
                     }
