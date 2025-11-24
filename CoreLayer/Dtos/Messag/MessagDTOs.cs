@@ -5,10 +5,29 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Enums;
+using Microsoft.AspNetCore.Http;
 
 namespace CoreLayer.Dtos.Messag
 {
-    // Request DTOs
+    // ==================== REQUEST DTOs ====================
+
+    public class SendMessageDto
+    {
+        [Required]
+        public string ReceiverId { get; set; }
+
+        public string? Content { get; set; }
+
+        [Required]
+        public MessageType Type { get; set; } = MessageType.Text;
+
+        public IFormFile? MediaFile { get; set; }
+
+        public MessageContextType ContextType { get; set; } = MessageContextType.General;
+
+        public int? ContextId { get; set; }
+    }
+
     public class MessageFilterParams
     {
         public int PageIndex { get; set; } = 1;
@@ -30,11 +49,14 @@ namespace CoreLayer.Dtos.Messag
         public string Message { get; set; }
     }
 
-    // Response DTOs
+    // ==================== RESPONSE DTOs ====================
+
     public class MessageResponseDto
     {
         public int Id { get; set; }
         public string Content { get; set; }
+        public MessageType Type { get; set; }
+        public string MediaUrl { get; set; }
         public DateTime SentAt { get; set; }
         public bool IsRead { get; set; }
 
@@ -98,6 +120,7 @@ namespace CoreLayer.Dtos.Messag
         public bool Success { get; set; }
         public string Message { get; set; }
         public int? MessageId { get; set; }
+        public MessageResponseDto MessageData { get; set; }
     }
 
     public class BlockOperationResponseDto

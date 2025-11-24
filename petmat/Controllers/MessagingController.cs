@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using CoreLayer.Dtos.Messag;
+using CoreLayer.Enums;
 using CoreLayer.Helper.Pagination;
 using CoreLayer.Service_Interface.Messag;
 using Microsoft.AspNetCore.Authorization;
@@ -14,10 +15,17 @@ namespace petmat.Controllers
     public class MessagingController : BaseApiController
     {
         private readonly IMessagingService _messagingService;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<MessagingController> _logger;
 
-        public MessagingController(IMessagingService messagingService)
+        public MessagingController(
+            IMessagingService messagingService,
+            IConfiguration configuration,
+            ILogger<MessagingController> logger)
         {
             _messagingService = messagingService;
+            _configuration = configuration;
+            _logger = logger;
         }
 
         private string GetUserId() =>
@@ -25,9 +33,6 @@ namespace petmat.Controllers
 
         // ==================== CONVERSATIONS ====================
 
-        /// <summary>
-        /// Get all conversations grouped by user with last message and unread count
-        /// </summary>
         [HttpGet("conversations")]
         [ProducesResponseType(typeof(ConversationListDto), StatusCodes.Status200OK)]
         public async Task<ActionResult<ConversationListDto>> GetConversations()
@@ -37,9 +42,6 @@ namespace petmat.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Get paginated conversation messages with a specific user (20 messages per page)
-        /// </summary>
         [HttpGet("conversation/{otherUserId}")]
         [ProducesResponseType(typeof(PaginationResponse<MessageResponseDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<PaginationResponse<MessageResponseDto>>> GetConversationMessages(
@@ -48,15 +50,96 @@ namespace petmat.Controllers
         {
             var userId = GetUserId();
             var result = await _messagingService.GetConversationMessagesAsync(
-                userId,
-                otherUserId,
-                filterParams);
+                userId, otherUserId, filterParams);
             return Ok(result);
         }
 
+        // ==================== SEND MESSAGE WITH FILE ====================
+
         /// <summary>
-        /// Get total unread messages count
+        /// Send a message with optional media file (image, video, document)
         /// </summary>
+        [HttpPost("send")]
+        [RequestSizeLimit(100 * 1024 * 1024)] // 100MB limit
+        [ProducesResponseType(typeof(MessageOperationResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<MessageOperationResponseDto>> SendMessage([FromForm] SendMessageDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiValidationErrorResponse());
+
+            try
+            {
+                var userId = GetUserId();
+
+                // Validate message type and content
+                if (dto.Type == MessageType.Text && string.IsNullOrWhiteSpace(dto.Content))
+                {
+                    return BadRequest(new ApiErrorResponse(400, "Text messages must have content"));
+                }
+
+                if (dto.Type != MessageType.Text && dto.MediaFile == null)
+                {
+                    return BadRequest(new ApiErrorResponse(400, $"{dto.Type} messages must include a media file"));
+                }
+
+                // Validate file type matches message type
+                if (dto.MediaFile != null)
+                {
+                    var validationError = ValidateFileType(dto.MediaFile, dto.Type);
+                    if (validationError != null)
+                    {
+                        return BadRequest(new ApiErrorResponse(400, validationError));
+                    }
+                }
+
+                var result = await _messagingService.SendMessageAsync(userId, dto);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending message");
+                return StatusCode(500, new ApiErrorResponse(500, "Failed to send message"));
+            }
+        }
+
+        private string ValidateFileType(IFormFile file, MessageType messageType)
+        {
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+            return messageType switch
+            {
+                MessageType.Image => !IsValidImageExtension(extension)
+                    ? "Invalid image file. Allowed: .jpg, .jpeg, .png, .gif, .webp"
+                    : null,
+
+                MessageType.Video => !IsValidVideoExtension(extension)
+                    ? "Invalid video file. Allowed: .mp4, .webm, .ogg, .mov, .avi, .mkv"
+                    : null,
+
+                MessageType.Document => !IsValidDocumentExtension(extension)
+                    ? "Invalid document file. Allowed: .pdf, .docx, .xlsx, .pptx, .txt, .rtf"
+                    : null,
+
+                _ => null
+            };
+        }
+
+        private bool IsValidImageExtension(string ext) =>
+            new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" }.Contains(ext);
+
+        private bool IsValidVideoExtension(string ext) =>
+            new[] { ".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv" }.Contains(ext);
+
+        private bool IsValidDocumentExtension(string ext) =>
+            new[] { ".pdf", ".docx", ".xlsx", ".pptx", ".txt", ".rtf" }.Contains(ext);
+
+        // ==================== UNREAD COUNTS ====================
+
         [HttpGet("unread-count")]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<ActionResult<int>> GetUnreadCount()
@@ -66,9 +149,6 @@ namespace petmat.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Get unread messages count from specific user
-        /// </summary>
         [HttpGet("unread-count/{otherUserId}")]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<ActionResult<int>> GetUnreadCountFromUser(string otherUserId)
@@ -78,13 +158,10 @@ namespace petmat.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Mark single message as read
-        /// </summary>
+        // ==================== MARK AS READ ====================
+
         [HttpPut("message/{messageId}/read")]
         [ProducesResponseType(typeof(MessageOperationResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<MessageOperationResponseDto>> MarkMessageAsRead(int messageId)
         {
             try
@@ -103,9 +180,6 @@ namespace petmat.Controllers
             }
         }
 
-        /// <summary>
-        /// Mark all messages in a conversation as read
-        /// </summary>
         [HttpPut("conversation/{otherUserId}/read-all")]
         [ProducesResponseType(typeof(MessageOperationResponseDto), StatusCodes.Status200OK)]
         public async Task<ActionResult<MessageOperationResponseDto>> MarkConversationAsRead(string otherUserId)
@@ -117,12 +191,8 @@ namespace petmat.Controllers
 
         // ==================== BLOCKING ====================
 
-        /// <summary>
-        /// Block a user
-        /// </summary>
         [HttpPost("block")]
         [ProducesResponseType(typeof(BlockOperationResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<BlockOperationResponseDto>> BlockUser([FromBody] BlockUserDto dto)
         {
             if (!ModelState.IsValid)
@@ -140,12 +210,8 @@ namespace petmat.Controllers
             }
         }
 
-        /// <summary>
-        /// Unblock a user
-        /// </summary>
         [HttpPost("unblock")]
         [ProducesResponseType(typeof(BlockOperationResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<BlockOperationResponseDto>> UnblockUser([FromBody] BlockUserDto dto)
         {
             if (!ModelState.IsValid)
@@ -163,9 +229,6 @@ namespace petmat.Controllers
             }
         }
 
-        /// <summary>
-        /// Get list of blocked users
-        /// </summary>
         [HttpGet("blocked-users")]
         [ProducesResponseType(typeof(BlockedUsersListDto), StatusCodes.Status200OK)]
         public async Task<ActionResult<BlockedUsersListDto>> GetBlockedUsers()
@@ -175,9 +238,6 @@ namespace petmat.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Check if a user is blocked
-        /// </summary>
         [HttpGet("is-blocked/{otherUserId}")]
         [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
         public async Task<ActionResult<bool>> IsUserBlocked(string otherUserId)

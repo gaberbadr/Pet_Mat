@@ -18,7 +18,9 @@ using CoreLayer.Helper.Pagination;
 using CoreLayer.Service_Interface.Messag;
 using CoreLayer.Specifications;
 using CoreLayer.Specifications.Messag;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace ServiceLayer.Services.Messag
 {
@@ -26,11 +28,105 @@ namespace ServiceLayer.Services.Messag
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<MessagingService> _logger;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public MessagingService(IUnitOfWork unitOfWork, IConfiguration configuration)
+        public MessagingService(
+            IUnitOfWork unitOfWork,
+            IConfiguration configuration,
+            ILogger<MessagingService> logger,
+            UserManager<ApplicationUser> userManager)
         {
             _unitOfWork = unitOfWork;
             _configuration = configuration;
+            _logger = logger;
+            _userManager = userManager;
+        }
+
+        // ==================== SEND MESSAGE WITH FILE ====================
+
+        public async Task<MessageOperationResponseDto> SendMessageAsync(string senderId, SendMessageDto dto)
+        {
+            // Validate receiver exists
+            var receiver = await _userManager.FindByIdAsync(dto.ReceiverId);
+
+            if (receiver == null || !receiver.IsActive)
+                throw new InvalidOperationException("Receiver not found or inactive");
+
+            // Check if blocked
+            var isBlocked = await IsUserBlockedAsync(senderId, dto.ReceiverId);
+            if (isBlocked)
+                throw new InvalidOperationException("Cannot send messages to this user");
+
+            string mediaUrl = null;
+
+            // Handle file upload
+            if (dto.MediaFile != null)
+            {
+                var folderName = GetFolderNameForMessageType(dto.Type);
+                var fileName = DocumentSetting.Upload(dto.MediaFile, folderName);
+                mediaUrl = fileName;
+            }
+
+            // Create message entity
+            var message = new Message
+            {
+                Content = dto.Content?.Trim() ?? string.Empty,
+                Type = dto.Type,
+                MediaUrl = mediaUrl,
+                SentAt = DateTime.UtcNow,
+                SenderId = senderId,
+                ReceiverId = dto.ReceiverId,
+                ContextType = dto.ContextType,
+                ContextId = dto.ContextId,
+                IsRead = false,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _unitOfWork.Repository<Message, int>().AddAsync(message);
+            await _unitOfWork.CompleteAsync();
+
+            // Get sender for response
+            var sender = _userManager.FindByIdAsync(senderId).Result;
+            var baseUrl = _configuration["BaseURL"];
+
+            var messageDto = MapToMessageDto(message, baseUrl);
+            messageDto.SenderName = $"{sender.FirstName} {sender.LastName}";
+            messageDto.SenderProfilePicture = !string.IsNullOrEmpty(sender.ProfilePicture)
+                ? DocumentSetting.GetFileUrl(sender.ProfilePicture, "profiles", baseUrl)
+                : null;
+            messageDto.ReceiverName = $"{receiver.FirstName} {receiver.LastName}";
+            messageDto.ReceiverProfilePicture = !string.IsNullOrEmpty(receiver.ProfilePicture)
+                ? DocumentSetting.GetFileUrl(receiver.ProfilePicture, "profiles", baseUrl)
+                : null;
+
+            // Add context info if exists
+            if (message.ContextId.HasValue)
+            {
+                messageDto.ContextInfo = await GetMessageContextInfoAsync(
+                    message.ContextType, message.ContextId);
+            }
+
+            return new MessageOperationResponseDto
+            {
+                Success = true,
+                Message = "Message sent successfully",
+                MessageId = message.Id,
+                MessageData = messageDto
+            };
+        }
+
+        private string GetFolderNameForMessageType(MessageType type)
+        {
+            return type switch
+            {
+                MessageType.Image => "messages/photos",
+                MessageType.Video => "messages/videos",
+                MessageType.Document => "messages/documents",
+                MessageType.Location => "messages",
+                _ => "messages"
+            };
         }
 
         // ==================== CONVERSATIONS ====================
@@ -39,12 +135,10 @@ namespace ServiceLayer.Services.Messag
         {
             var baseUrl = _configuration["BaseURL"];
 
-            // Get all messages for the user
             var spec = new LatestMessagePerConversationSpecification(userId);
             var allMessages = await _unitOfWork.Repository<Message, int>()
                 .GetAllWithSpecficationAsync(spec);
 
-            // Group by conversation partner and get latest message + unread count
             var conversationGroups = allMessages
                 .GroupBy(m => m.SenderId == userId ? m.ReceiverId : m.SenderId)
                 .Select(g => new
@@ -64,7 +158,6 @@ namespace ServiceLayer.Services.Messag
                     ? group.LatestMessage.Receiver
                     : group.LatestMessage.Sender;
 
-                // Check if user is online (you can implement this with SignalR tracking)
                 var isOnline = await CheckUserOnlineStatus(group.OtherUserId);
                 var lastSeen = await GetUserLastSeen(group.OtherUserId);
 
@@ -98,33 +191,27 @@ namespace ServiceLayer.Services.Messag
         {
             var baseUrl = _configuration["BaseURL"];
 
-            // Get paginated messages
             var spec = new MessagesBetweenUsersPaginatedSpecification(userId, otherUserId, filterParams);
             var messages = await _unitOfWork.Repository<Message, int>()
                 .GetAllWithSpecficationAsync(spec);
 
-            // Get total count
             var countSpec = new MessagesBetweenUsersCountSpecification(userId, otherUserId);
             var totalCount = await _unitOfWork.Repository<Message, int>().GetCountAsync(countSpec);
 
-            // Map to DTOs
             var messageDtos = new List<MessageResponseDto>();
             foreach (var message in messages)
             {
                 var messageDto = MapToMessageDto(message, baseUrl);
 
-                // Add context info if exists
                 if (message.ContextId.HasValue)
                 {
                     messageDto.ContextInfo = await GetMessageContextInfoAsync(
-                        message.ContextType,
-                        message.ContextId);
+                        message.ContextType, message.ContextId);
                 }
 
                 messageDtos.Add(messageDto);
             }
 
-            // Reverse to show oldest first (messages are fetched newest first for pagination)
             messageDtos.Reverse();
 
             return new PaginationResponse<MessageResponseDto>(
@@ -298,8 +385,7 @@ namespace ServiceLayer.Services.Messag
             MessageContextType contextType,
             int? contextId)
         {
-            if (!contextId.HasValue)
-                return null;
+            if (!contextId.HasValue) return null;
 
             var baseUrl = _configuration["BaseURL"];
 
@@ -330,7 +416,6 @@ namespace ServiceLayer.Services.Messag
                         .GetAsync(contextId.Value);
                     if (listing == null) return null;
 
-                    // Get animal details
                     var animal = await _unitOfWork.Repository<Animal, int>()
                         .GetAsync(listing.AnimalId);
 
@@ -399,6 +484,13 @@ namespace ServiceLayer.Services.Messag
             {
                 Id = message.Id,
                 Content = message.Content,
+                Type = message.Type,
+                MediaUrl = !string.IsNullOrEmpty(message.MediaUrl)
+                    ? DocumentSetting.GetFileUrl(
+                        message.MediaUrl,
+                        GetFolderNameForMessageType(message.Type),
+                        baseUrl)
+                    : null,
                 SentAt = message.SentAt,
                 IsRead = message.IsRead,
                 SenderId = message.SenderId,
@@ -418,7 +510,6 @@ namespace ServiceLayer.Services.Messag
 
         private async Task<bool> CheckUserOnlineStatus(string userId)
         {
-            // Check if user has any active connections
             var connections = await _unitOfWork.Repository<UserConnection, int>()
                 .FindAsync(c => c.UserId == userId && c.IsActive);
 
