@@ -277,10 +277,10 @@ namespace petmat.ProgramHelper
             {
                 options.AddPolicy("AllowAll", policy =>
                 {
-                    policy.WithOrigins("http://127.0.0.1:5500", "http://localhost:5000", "https://localhost:7289") // Your frontend
+                    policy.WithOrigins("http://127.0.0.1:5500", "http://localhost:5000", "https://localhost:7289", "http://localhost:3000") 
                           .AllowAnyHeader()
                           .AllowAnyMethod()
-                          .AllowCredentials(); // ⚠️ CRITICAL for SignalR
+                          .AllowCredentials();
                 });
             });
 
