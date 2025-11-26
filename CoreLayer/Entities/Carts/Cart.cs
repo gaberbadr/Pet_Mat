@@ -25,12 +25,6 @@ namespace CoreLayer.Entities.Carts
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-
-        [MaxLength(200)]
-        public string? PaymentIntentId { get; set; }
-
-        public string? ClientSecret { get; set; }
-
         public int? DeliveryMethodId { get; set; }
 
         // Navigation Properties

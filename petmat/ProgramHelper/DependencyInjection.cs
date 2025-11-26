@@ -69,6 +69,8 @@ namespace petmat.ProgramHelper
             services.AddJwtAuthenticationServices(configuration);
             services.AddSignalRServices();
 
+            services.AddHostedService<ExpiredOrderCleanupService>();
+
             services.AddMemoryCache();
             services.AddResponseCaching();
 

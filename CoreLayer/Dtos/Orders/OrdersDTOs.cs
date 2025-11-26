@@ -8,7 +8,7 @@ using CoreLayer.Enums;
 
 namespace CoreLayer.Dtos.Orders
 {
-    // ==================== CART DTOs ====================
+    // ==================== CART DTOS ====================
 
     public class AddToCartDto
     {
@@ -108,7 +108,13 @@ namespace CoreLayer.Dtos.Orders
         public decimal DeliveryMethodCost { get; set; }
         public decimal Total { get; set; }
         public string CouponCode { get; set; }
-        public string PaymentIntentId { get; set; }
+
+        // Payment intent id (nullable for COD)
+        public string? PaymentIntentId { get; set; }
+
+        // Client secret returned so frontend can confirm payment
+        public string? ClientSecret { get; set; }
+
         public OrderAddressDto ShippingAddress { get; set; }
         public DeliveryMethodDto DeliveryMethod { get; set; }
         public List<OrderItemDto> Items { get; set; }
@@ -283,5 +289,8 @@ namespace CoreLayer.Dtos.Orders
         public string ClientSecret { get; set; }
         public decimal Amount { get; set; }
         public string Currency { get; set; }
+
+        // status to let callers validate intent state (e.g. "requires_payment_method", "succeeded")
+        public string Status { get; set; }
     }
 }

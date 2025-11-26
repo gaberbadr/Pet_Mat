@@ -6,6 +6,7 @@ using CoreLayer;
 using CoreLayer.Dtos.Orders;
 using CoreLayer.Entities.Carts;
 using CoreLayer.Entities.Orders;
+using CoreLayer.Entities.Foods;
 using CoreLayer.Enums;
 using CoreLayer.Service_Interface.Orders;
 using CoreLayer.Specifications.Orders;
@@ -86,98 +87,44 @@ namespace ServiceLayer.Services.Orders
 
             var total = subtotal - discountAmount + shippingPrice;
             var service = new PaymentIntentService();
+
+            // Create a fresh payment intent for the current cart totals.
+            var options = new PaymentIntentCreateOptions
+            {
+                // Round to nearest cent to avoid floating-point truncation
+                Amount = (long)Math.Round(total * 100m),
+                Currency = "usd",
+                PaymentMethodTypes = new List<string> { "card" },
+                Metadata = new Dictionary<string, string>
+                {
+                    { "userId", userId },
+                    { "cartId", cart.Id.ToString() }
+                }
+            };
+
             PaymentIntent paymentIntent;
-
-            // Check if payment intent exists and its status
-            if (!string.IsNullOrEmpty(cart.PaymentIntentId))
+            try
             {
-                try
-                {
-                    var existingIntent = await service.GetAsync(cart.PaymentIntentId);
-
-                    // If payment already succeeded, create a new payment intent
-                    if (existingIntent.Status == "succeeded")
-                    {
-                        var options = new PaymentIntentCreateOptions
-                        {
-                            Amount = (long)(total * 100),
-                            Currency = "usd",
-                            PaymentMethodTypes = new List<string> { "card" }
-                        };
-
-                        paymentIntent = await service.CreateAsync(options);
-                        cart.PaymentIntentId = paymentIntent.Id;
-                        cart.ClientSecret = paymentIntent.ClientSecret;
-                    }
-                    // If payment can be updated
-                    else if (existingIntent.Status == "requires_payment_method" ||
-                             existingIntent.Status == "requires_confirmation" ||
-                             existingIntent.Status == "requires_action")
-                    {
-                        var updateOptions = new PaymentIntentUpdateOptions
-                        {
-                            Amount = (long)(total * 100)
-                        };
-
-                        paymentIntent = await service.UpdateAsync(cart.PaymentIntentId, updateOptions);
-                    }
-                    else
-                    {
-                        // Create new payment intent
-                        var options = new PaymentIntentCreateOptions
-                        {
-                            Amount = (long)(total * 100),
-                            Currency = "usd",
-                            PaymentMethodTypes = new List<string> { "card" }
-                        };
-
-                        paymentIntent = await service.CreateAsync(options);
-                        cart.PaymentIntentId = paymentIntent.Id;
-                        cart.ClientSecret = paymentIntent.ClientSecret;
-                    }
-                }
-                catch (StripeException)
-                {
-                    // Create new payment intent on error
-                    var options = new PaymentIntentCreateOptions
-                    {
-                        Amount = (long)(total * 100),
-                        Currency = "usd",
-                        PaymentMethodTypes = new List<string> { "card" }
-                    };
-
-                    paymentIntent = await service.CreateAsync(options);
-                    cart.PaymentIntentId = paymentIntent.Id;
-                    cart.ClientSecret = paymentIntent.ClientSecret;
-                }
-            }
-            else
-            {
-                // Create new payment intent
-                var options = new PaymentIntentCreateOptions
-                {
-                    Amount = (long)(total * 100),
-                    Currency = "usd",
-                    PaymentMethodTypes = new List<string> { "card" }
-                };
-
                 paymentIntent = await service.CreateAsync(options);
-                cart.PaymentIntentId = paymentIntent.Id;
-                cart.ClientSecret = paymentIntent.ClientSecret;
+            }
+            catch (StripeException ex)
+            {
+                // Surface a friendly message to the caller; controllers map InvalidOperationException to BadRequest
+                throw new InvalidOperationException($"Payment gateway error: {ex.Message}");
             }
 
-            _unitOfWork.Repository<Cart, int>().Update(cart);
+            // Persist any cart item price updates done above
             await _unitOfWork.CompleteAsync();
 
             return new PaymentIntentResponseDto
             {
                 PaymentIntentId = paymentIntent.Id,
                 ClientSecret = paymentIntent.ClientSecret,
-                Amount = total,
-                Currency = "usd"
+                Amount = (decimal)paymentIntent.Amount / 100m,
+                Currency = paymentIntent.Currency,
+                Status = paymentIntent.Status
             };
         }
-
 
         public async Task<OrderDto> UpdatePaymentIntentStatusAsync(string paymentIntentId, bool isSuccessful)
         {
@@ -187,11 +134,37 @@ namespace ServiceLayer.Services.Orders
             if (order == null)
                 throw new KeyNotFoundException($"Order not found for payment intent: {paymentIntentId}");
 
-            // Update status based on payment result
-            order.Status = isSuccessful ? OrderStatus.Processing : OrderStatus.Cancelled;
+            // If success -> move to Processing (idempotent)
+            if (isSuccessful)
+            {
+                if (order.Status != OrderStatus.Processing)
+                {
+                    order.Status = OrderStatus.Processing;
+                    _unitOfWork.Repository<Order, int>().Update(order);
+                    await _unitOfWork.CompleteAsync();
+                }
+            }
+            else
+            {
+                // On payment failure -> cancel order and restore stock (idempotent)
+                if (order.Status != OrderStatus.Cancelled)
+                {
+                    // Restore product stock
+                    foreach (var item in order.Items)
+                    {
+                        var product = await _unitOfWork.Repository<CoreLayer.Entities.Foods.Product, int>().GetAsync(item.ProductId);
+                        if (product != null)
+                        {
+                            product.Stock += item.Quantity;
+                            _unitOfWork.Repository<CoreLayer.Entities.Foods.Product, int>().Update(product);
+                        }
+                    }
 
-            _unitOfWork.Repository<Order, int>().Update(order);
-            await _unitOfWork.CompleteAsync();
+                    order.Status = OrderStatus.Cancelled;
+                    _unitOfWork.Repository<Order, int>().Update(order);
+                    await _unitOfWork.CompleteAsync();
+                }
+            }
 
             // Return updated order details
             var detailSpec = new AdminOrderByIdSpecification(order.Id);
@@ -214,5 +187,6 @@ namespace ServiceLayer.Services.Orders
                 PaymentIntentId = order.PaymentIntentId
             };
         }
+
     }
 }

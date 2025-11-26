@@ -49,16 +49,16 @@ namespace ServiceLayer.Services.Orders
             if (deliveryMethod == null)
                 throw new KeyNotFoundException("Delivery method not found");
 
-            // Ensure payment intent exists
+            // If online payment requested, create a payment intent for current cart totals
+            PaymentIntentResponseDto createdIntent = null;
             if (dto.PaymentMethod == PaymentMethod.Online)
             {
-                if (string.IsNullOrEmpty(cart.PaymentIntentId))
-                {
-                    throw new InvalidOperationException("Please create a payment intent first before creating order.");
-                }
+                createdIntent = await _paymentService.CreateOrUpdatePaymentIntentAsync(userId);
+                if (createdIntent == null)
+                    throw new InvalidOperationException("Failed to create payment intent");
             }
 
-            // Validate and create order items
+            // Validate and create order items & reduce stock
             var orderItems = new List<OrderItem>();
             foreach (var cartItem in cart.Items)
             {
@@ -113,7 +113,17 @@ namespace ServiceLayer.Services.Orders
                 }
             }
 
-            // Create shipping address
+            // Get shipping cost
+            decimal shippingPrice = 0;
+            if (cart.DeliveryMethodId.HasValue)
+            {
+                var dm = await _unitOfWork.Repository<DeliveryMethod, int>().GetAsync(cart.DeliveryMethodId.Value);
+                if (dm != null) shippingPrice = dm.Cost;
+            }
+
+            var total = subtotal - discountAmount + shippingPrice;
+
+            // Create shipping address entity
             var shippingAddress = new OrderAddress
             {
                 FName = dto.ShippingAddress.FName,
@@ -123,12 +133,15 @@ namespace ServiceLayer.Services.Orders
                 Country = dto.ShippingAddress.Country
             };
 
-            // ✅ NEW: Set initial order status based on payment method
             var initialStatus = dto.PaymentMethod == PaymentMethod.Online
-                ? OrderStatus.PendingPayment  // Will be updated by webhook
-                : OrderStatus.Pending;         // Cash on Delivery
+                ? OrderStatus.PendingPayment
+                : OrderStatus.Pending;
 
-            // ✅ Create order IMMEDIATELY (before payment verification)
+            // Attach created payment intent info to order (if any)
+            var paymentIntentId = dto.PaymentMethod == PaymentMethod.Online ? createdIntent?.PaymentIntentId : null;
+            var clientSecret = dto.PaymentMethod == PaymentMethod.Online ? createdIntent?.ClientSecret : null;
+
+            // Create order
             var order = new Order
             {
                 BuyerEmail = buyerEmail,
@@ -140,8 +153,8 @@ namespace ServiceLayer.Services.Orders
                 SubTotal = subtotal,
                 DiscountAmount = discountAmount,
                 CouponCode = couponCode,
-                PaymentIntentId = dto.PaymentMethod == PaymentMethod.Online ? cart.PaymentIntentId : null,
-                ClientSecret = dto.PaymentMethod == PaymentMethod.Online ? cart.ClientSecret : null,
+                PaymentIntentId = paymentIntentId,
+                ClientSecret = clientSecret,
                 ShippingAddress = shippingAddress,
                 Items = orderItems,
                 CreatedAt = DateTime.UtcNow
@@ -150,18 +163,16 @@ namespace ServiceLayer.Services.Orders
             await _unitOfWork.Repository<Order, int>().AddAsync(order);
             await _unitOfWork.CompleteAsync();
 
-            // Clear cart
+            // Clear cart items and reset cart metadata
             await _unitOfWork.Repository<CartItem, int>().DeleteRangeAsync(ci => ci.CartId == cart.Id);
             cart.CouponCode = null;
             cart.DiscountAmount = 0;
-            cart.PaymentIntentId = null;
-            cart.ClientSecret = null;
             cart.DeliveryMethodId = null;
             cart.LastUpdated = DateTime.UtcNow;
             _unitOfWork.Repository<Cart, int>().Update(cart);
             await _unitOfWork.CompleteAsync();
 
-            // ✅ Return created order (status = PendingPayment for online)
+            // Return created order (includes client secret when online)
             return await GetOrderByIdAsync(userId, order.Id);
         }
 
@@ -187,6 +198,48 @@ namespace ServiceLayer.Services.Orders
             {
                 Count = orderDtos.Count,
                 Data = orderDtos
+            };
+        }
+
+        //Allow user to cancel their own order if still Pending or PendingPayment
+        public async Task<OrderOperationResponseDto> CancelOrderAsync(string userId, int orderId)
+        {
+            var spec = new OrderWithDetailsSpecification(orderId, userId);
+            var order = await _unitOfWork.Repository<Order, int>().GetWithSpecficationAsync(spec);
+
+            if (order == null)
+                throw new KeyNotFoundException("Order not found");
+
+            if (order.Status != OrderStatus.Pending && order.Status != OrderStatus.PendingPayment)
+            {
+                return new OrderOperationResponseDto
+                {
+                    Success = false,
+                    Message = $"Cannot cancel order when status is '{order.Status}'.",
+                    OrderId = orderId
+                };
+            }
+
+            // Restore product stock
+            foreach (var item in order.Items)
+            {
+                var product = await _unitOfWork.Repository<Product, int>().GetAsync(item.ProductId);
+                if (product != null)
+                {
+                    product.Stock += item.Quantity;
+                    _unitOfWork.Repository<Product, int>().Update(product);
+                }
+            }
+
+            order.Status = OrderStatus.Cancelled;
+            _unitOfWork.Repository<Order, int>().Update(order);
+            await _unitOfWork.CompleteAsync();
+
+            return new OrderOperationResponseDto
+            {
+                Success = true,
+                Message = "Order cancelled successfully.",
+                OrderId = orderId
             };
         }
 
@@ -220,6 +273,7 @@ namespace ServiceLayer.Services.Orders
                 Total = total,
                 CouponCode = order.CouponCode,
                 PaymentIntentId = order.PaymentIntentId,
+                ClientSecret = order.ClientSecret,
                 ShippingAddress = new OrderAddressDto
                 {
                     FName = order.ShippingAddress.FName,
