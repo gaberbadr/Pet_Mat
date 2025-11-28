@@ -9,11 +9,7 @@ namespace CoreLayer.Dtos.Admin
 {
     // ==================== INPUT DTOs ====================
 
-    public class BlockUserDto
-    {
-        [Required]
-        public string UserId { get; set; }
-    }
+
 
     public class SpeciesAdminDto
     {
@@ -41,22 +37,6 @@ namespace CoreLayer.Dtos.Admin
 
     // ==================== OUTPUT DTOs ====================
 
-    public class UserBlockResponseDto
-    {
-        public string UserId { get; set; }
-        public string Email { get; set; }
-        public string FullName { get; set; }
-        public bool IsActive { get; set; }
-        public string Message { get; set; }
-    }
-
-    public class UserRolesResponseDto
-    {
-        public string UserId { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public List<string> RolesRemoved { get; set; } = new();
-        public string Message { get; set; } = string.Empty;
-    }
 
     public class SpeciesResponseDto
     {

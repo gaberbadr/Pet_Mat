@@ -7,7 +7,7 @@ using petmat.Errors;
 
 namespace petmat.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "AdminOrAssistant")]
     public class AdminProductController : BaseApiController
     {
         private readonly IAdminProductService _adminProductService;

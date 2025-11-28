@@ -107,4 +107,14 @@ namespace CoreLayer.Specifications.Orders
             Includes.Add(o => o.User);
         }
     }
+
+    public class ExpiredPendingPaymentOrdersSpecification : BaseSpecifications<Order, int>
+    {
+        public ExpiredPendingPaymentOrdersSpecification(DateTime cutoff)
+            : base(o => o.Status == OrderStatus.PendingPayment && o.OrderDate <= cutoff)
+        {
+            // include order items and product for stock adjustments
+            AddInclude("Items.Product");
+        }
+    }
 }

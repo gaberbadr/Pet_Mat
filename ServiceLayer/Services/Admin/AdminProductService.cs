@@ -14,7 +14,7 @@ using CoreLayer.Helper.Documents;
 using CoreLayer.Service_Interface.Products;
 using Microsoft.Extensions.Configuration;
 
-namespace ServiceLayer.Services.Products
+namespace ServiceLayer.Services.Admin
 {
     public class AdminProductService : IAdminProductService
     {

@@ -7,6 +7,7 @@ using CoreLayer.Entities.Foods;
 using CoreLayer.Entities.Orders;
 using CoreLayer.Enums;
 using CoreLayer.Service_Interface.Notification;
+using CoreLayer.Specifications.Orders;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -67,8 +68,8 @@ public class ExpiredOrderCleanupService : BackgroundService
 
         var cutoff = DateTime.UtcNow.AddHours(-24);
 
-        var candidates = await unitOfWork.Repository<Order, int>()
-            .FindAsync(o => o.Status == OrderStatus.PendingPayment && o.OrderDate <= cutoff);
+        var spec = new ExpiredPendingPaymentOrdersSpecification(cutoff);
+        var candidates = await unitOfWork.Repository<Order, int>().FindWithSpecificationAsync(spec);
 
         var list = candidates.ToList();
         if (!list.Any())
@@ -88,13 +89,16 @@ public class ExpiredOrderCleanupService : BackgroundService
             token.ThrowIfCancellationRequested();
 
             // restore stock
-            foreach (var item in order.Items)
+            if (order.Items != null)
             {
-                var product = await unitOfWork.Repository<CoreLayer.Entities.Foods.Product, int>().GetAsync(item.ProductId);
-                if (product != null)
+                foreach (var item in order.Items)
                 {
-                    product.Stock += item.Quantity;
-                    unitOfWork.Repository<CoreLayer.Entities.Foods.Product, int>().Update(product);
+                    var product = await unitOfWork.Repository<CoreLayer.Entities.Foods.Product, int>().GetAsync(item.ProductId);
+                    if (product != null)
+                    {
+                        product.Stock += item.Quantity;
+                        unitOfWork.Repository<CoreLayer.Entities.Foods.Product, int>().Update(product);
+                    }
                 }
             }
 

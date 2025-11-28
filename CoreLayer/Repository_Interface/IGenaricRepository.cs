@@ -34,6 +34,7 @@ namespace CoreLayer.Repository_Interface
         Task<int> GetCountAsync(ISpecifications<TEntity, TKey> spec);
         Task<IEnumerable<TEntity>> GetAllWithSpecficationAsync(ISpecifications<TEntity, TKey> spec);
         Task<TEntity> GetWithSpecficationAsync(ISpecifications<TEntity, TKey> spec);
+        Task<IEnumerable<TEntity>> FindWithSpecificationAsync(ISpecifications<TEntity, TKey> spec);
         Task<IEnumerable<TDto>> GetAllWithProjectionAsync<TDto>(
             ISpecifications<TEntity, TKey> spec,
             IConfigurationProvider mapperConfig);

@@ -231,11 +231,11 @@ namespace petmat.Hubs
         }
 
         public async Task SendPrivateMessage(
-            string receiverId,
-            string message,
-            string messageType = "Text",
-            string contextType = null,
-            int? contextId = null)
+                    string receiverId,
+                    string message,
+                    string messageType = "Text",
+                    string contextType = null,
+                    int? contextId = null)
         {
             var senderId = Context.UserIdentifier;
 
@@ -247,8 +247,6 @@ namespace petmat.Hubs
 
             try
             {
-                // When sending via Hub we delegate to the messaging service to ensure
-                // upload, media url and mapping logic remain consistent.
                 if (!Enum.TryParse<MessageType>(messageType, true, out var msgType))
                 {
                     msgType = MessageType.Text;
@@ -260,8 +258,6 @@ namespace petmat.Hubs
                     Enum.TryParse(contextType, true, out messageContextType);
                 }
 
-                // Only text messages should be sent via this hub method (no file streaming here).
-                // For media messages prefer the HTTP endpoint (/api/messaging/send) which handles file upload.
                 if (msgType != MessageType.Text)
                 {
                     await Clients.Caller.SendAsync("Error", "Media messages must be sent using the HTTP upload endpoint");
@@ -284,22 +280,6 @@ namespace petmat.Hubs
                     await Clients.Caller.SendAsync("Error", "Failed to send message");
                     return;
                 }
-
-                var messageData = result.MessageData;
-
-                // send to sender and receiver
-                await Clients.Caller.SendAsync("ReceivePrivateMessage", messageData);
-                await Clients.User(receiverId).SendAsync("ReceivePrivateMessage", messageData);
-
-                // update unread counts and conversations
-                var unreadCount = await _messagingService.GetUnreadCountAsync(receiverId);
-                await Clients.User(receiverId).SendAsync("UnreadMessagesCount", unreadCount);
-
-                var senderConversations = await _messagingService.GetConversationsAsync(senderId);
-                await Clients.User(senderId).SendAsync("ConversationsUpdated", senderConversations);
-
-                var receiverConversations = await _messagingService.GetConversationsAsync(receiverId);
-                await Clients.User(receiverId).SendAsync("ConversationsUpdated", receiverConversations);
             }
             catch (Exception ex)
             {

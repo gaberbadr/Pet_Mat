@@ -45,7 +45,6 @@ using ServiceLayer.Services.Messag;
 using ServiceLayer.Services.Notifications;
 using ServiceLayer.Services.Orders;
 using ServiceLayer.Services.Pharmacy;
-using ServiceLayer.Services.Products;
 using ServiceLayer.Services.User;
 using Stripe;
 using Stripe.Climate;
@@ -63,6 +62,7 @@ namespace petmat.ProgramHelper
             services.AddUserDefinedServices();
             services.AddAutoMapperServices(configuration);
             services.AddIdentityServices();
+            services.AddAuthorizationServices();
             services.AddCorsServices(); // Must be before JWT
             services.AddApiValidationErrorResponseServices();
             services.AddLimiterServices();
@@ -345,5 +345,17 @@ namespace petmat.ProgramHelper
 
             return services;
         }
+
+        private static IServiceCollection AddAuthorizationServices(this IServiceCollection services)
+        {
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("AdminOrAssistant", policy =>
+                    policy.RequireRole("Admin", "AdminAssistant"));
+            });
+
+            return services;
+        }
+
     }
 }

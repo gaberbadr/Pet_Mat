@@ -15,7 +15,7 @@ using CoreLayer.Service_Interface.Orders;
 using CoreLayer.Specifications.Orders;
 using Microsoft.Extensions.Configuration;
 
-namespace ServiceLayer.Services.Orders
+namespace ServiceLayer.Services.Admin
 {
     public class AdminOrderService : IAdminOrderService
     {

@@ -19,8 +19,10 @@ using CoreLayer.Service_Interface.Messag;
 using CoreLayer.Specifications;
 using CoreLayer.Specifications.Messag;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using petmat.Hubs;
 
 namespace ServiceLayer.Services.Messag
 {
@@ -30,45 +32,50 @@ namespace ServiceLayer.Services.Messag
         private readonly IConfiguration _configuration;
         private readonly ILogger<MessagingService> _logger;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IHubContext<ChatHub> _hubContext;
 
         public MessagingService(
             IUnitOfWork unitOfWork,
             IConfiguration configuration,
             ILogger<MessagingService> logger,
+            IHubContext<ChatHub> hubContext,
             UserManager<ApplicationUser> userManager)
         {
             _unitOfWork = unitOfWork;
             _configuration = configuration;
             _logger = logger;
             _userManager = userManager;
+            _hubContext = hubContext;
         }
 
         // ==================== SEND MESSAGE WITH FILE ====================
 
         public async Task<MessageOperationResponseDto> SendMessageAsync(string senderId, SendMessageDto dto)
         {
-            // Validate receiver exists
-            var receiver = await _userManager.FindByIdAsync(dto.ReceiverId);
+            // 1. Validate Content
+            ValidateMessageContent(dto);
 
+            // 2. Validate Receiver (We fetch the entity here)
+            var receiver = await _userManager.FindByIdAsync(dto.ReceiverId);
             if (receiver == null || !receiver.IsActive)
                 throw new InvalidOperationException("Receiver not found or inactive");
 
-            // Check if blocked
-            var isBlocked = await IsUserBlockedAsync(senderId, dto.ReceiverId);
-            if (isBlocked)
-                throw new InvalidOperationException("Cannot send messages to this user");
+            // 3. Fetch Sender
+            var sender = await _userManager.FindByIdAsync(senderId);
 
+            // 4. Check Blocking
+            if (await IsUserBlockedAsync(senderId, dto.ReceiverId))
+                throw new InvalidOperationException("Cannot send messages to this blocked user");
+
+            // 5. Handle File Upload
             string mediaUrl = null;
-
-            // Handle file upload
             if (dto.MediaFile != null)
             {
                 var folderName = GetFolderNameForMessageType(dto.Type);
-                var fileName = DocumentSetting.Upload(dto.MediaFile, folderName);
-                mediaUrl = fileName;
+                mediaUrl = DocumentSetting.Upload(dto.MediaFile, folderName);
             }
 
-            // Create message entity
+            // 6. Create Entity
             var message = new Message
             {
                 Content = dto.Content?.Trim() ?? string.Empty,
@@ -87,26 +94,22 @@ namespace ServiceLayer.Services.Messag
             await _unitOfWork.Repository<Message, int>().AddAsync(message);
             await _unitOfWork.CompleteAsync();
 
-            // Get sender for response
-            var sender = _userManager.FindByIdAsync(senderId).Result;
+
+            message.Sender = sender;
+            message.Receiver = receiver;
+
+            // 7. Map 
             var baseUrl = _configuration["BaseURL"];
-
             var messageDto = MapToMessageDto(message, baseUrl);
-            messageDto.SenderName = $"{sender.FirstName} {sender.LastName}";
-            messageDto.SenderProfilePicture = !string.IsNullOrEmpty(sender.ProfilePicture)
-                ? DocumentSetting.GetFileUrl(sender.ProfilePicture, "profiles", baseUrl)
-                : null;
-            messageDto.ReceiverName = $"{receiver.FirstName} {receiver.LastName}";
-            messageDto.ReceiverProfilePicture = !string.IsNullOrEmpty(receiver.ProfilePicture)
-                ? DocumentSetting.GetFileUrl(receiver.ProfilePicture, "profiles", baseUrl)
-                : null;
 
-            // Add context info if exists
+            // 8. Add Context Info
             if (message.ContextId.HasValue)
             {
-                messageDto.ContextInfo = await GetMessageContextInfoAsync(
-                    message.ContextType, message.ContextId);
+                messageDto.ContextInfo = await GetMessageContextInfoAsync(message.ContextType, message.ContextId);
             }
+
+            // 9. Broadcast
+            await BroadcastMessageAsync(senderId, dto.ReceiverId, messageDto);
 
             return new MessageOperationResponseDto
             {
@@ -115,6 +118,64 @@ namespace ServiceLayer.Services.Messag
                 MessageId = message.Id,
                 MessageData = messageDto
             };
+        }
+
+        // ==================== PRIVATE HELPER METHODS ====================
+
+        private async Task BroadcastMessageAsync(string senderId, string receiverId, MessageResponseDto messageData)
+        {
+            // Send to sender (for immediate UI update on multiple devices)
+            await _hubContext.Clients.User(senderId).SendAsync("ReceivePrivateMessage", messageData);
+
+            // Send to receiver
+            await _hubContext.Clients.User(receiverId).SendAsync("ReceivePrivateMessage", messageData);
+
+            // Update Receiver's unread count
+            var unreadCount = await GetUnreadCountAsync(receiverId);
+            await _hubContext.Clients.User(receiverId).SendAsync("UnreadMessagesCount", unreadCount);
+
+            // Refresh conversation lists for both
+            var senderConversations = await GetConversationsAsync(senderId);
+            await _hubContext.Clients.User(senderId).SendAsync("ConversationsUpdated", senderConversations);
+
+            var receiverConversations = await GetConversationsAsync(receiverId);
+            await _hubContext.Clients.User(receiverId).SendAsync("ConversationsUpdated", receiverConversations);
+        }
+
+        private void ValidateMessageContent(SendMessageDto dto)
+        {
+            // Validate text content
+            if (dto.Type == MessageType.Text && string.IsNullOrWhiteSpace(dto.Content))
+            {
+                throw new ArgumentException("Text messages must have content");
+            }
+
+            // Validate media presence
+            if (dto.Type != MessageType.Text && dto.MediaFile == null)
+            {
+                throw new ArgumentException($"{dto.Type} messages must include a media file");
+            }
+
+            // Validate file extension
+            if (dto.MediaFile != null)
+            {
+                var extension = Path.GetExtension(dto.MediaFile.FileName).ToLowerInvariant();
+                string error = dto.Type switch
+                {
+                    MessageType.Image => !new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" }.Contains(extension)
+                        ? "Invalid image file. Allowed: .jpg, .jpeg, .png, .gif, .webp" : null,
+
+                    MessageType.Video => !new[] { ".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv" }.Contains(extension)
+                        ? "Invalid video file. Allowed: .mp4, .webm, .ogg, .mov, .avi, .mkv" : null,
+
+                    MessageType.Document => !new[] { ".pdf", ".docx", ".xlsx", ".pptx", ".txt", ".rtf" }.Contains(extension)
+                        ? "Invalid document file. Allowed: .pdf, .docx, .xlsx, .pptx, .txt, .rtf" : null,
+
+                    _ => null
+                };
+
+                if (error != null) throw new ArgumentException(error);
+            }
         }
 
         private string GetFolderNameForMessageType(MessageType type)

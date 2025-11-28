@@ -37,61 +37,7 @@ namespace petmat.Controllers
             _adminPharmacyApplicationManagement = adminPharmacyApplicationManagement;
         }
 
-        // ==================== USER MANAGEMENT ====================
-
-        /// Block a user account
-        [ProducesResponseType(typeof(UserBlockResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
-        [HttpPost("block-user/{userId}")]
-        public async Task<ActionResult<UserBlockResponseDto>> BlockUser(string userId)
-        {
-
-            if (!ModelState.IsValid)
-                return BadRequest(new ApiValidationErrorResponse());
-
-            try
-            {
-                var result = await _adminUserManagement.BlockUserAsync(userId);
-                return Ok(result);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new ApiErrorResponse(404, ex.Message));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new ApiErrorResponse(400, ex.Message));
-            }
-        }
-
-
-        /// Unblock a user account
-        [ProducesResponseType(typeof(UserBlockResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
-        [HttpPost("unblock-user/{userId}")]
-        public async Task<ActionResult<UserBlockResponseDto>> UnblockUser(string userId)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(new ApiValidationErrorResponse());
-
-            try
-            {
-                var result = await _adminUserManagement.UnblockUserAsync(userId);
-                return Ok(result);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new ApiErrorResponse(404, ex.Message));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new ApiErrorResponse(400, ex.Message));
-            }
-        }
+       
 
         // ==================== SPECIES MANAGEMENT ====================
 

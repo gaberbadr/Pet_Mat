@@ -105,6 +105,15 @@ public class GenaricRepository<TEntity, TKey> : IGenaricRepository<TEntity, TKey
         return await ApplySpecfications(spec).FirstOrDefaultAsync();
     }
 
+    public async Task<IEnumerable<TEntity>> FindWithSpecificationAsync(ISpecifications<TEntity, TKey> spec)
+    {
+        if (spec == null)
+            throw new ArgumentNullException(nameof(spec));
+
+        return await ApplySpecfications(spec).ToListAsync();
+    }
+
+
     //for simple entity profile to dto cause Faster and lighter, because it only retrieves the required columns from SQL.
     public async Task<IEnumerable<TDto>> GetAllWithProjectionAsync<TDto>(
         ISpecifications<TEntity, TKey> spec,

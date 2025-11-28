@@ -59,6 +59,6 @@ namespace CoreLayer.Entities.Orders
         [ForeignKey("ShippingAddressId")]
         public OrderAddress ShippingAddress { get; set; }
 
-        public ICollection<OrderItem> Items { get; set; }
+        public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
     }
 }

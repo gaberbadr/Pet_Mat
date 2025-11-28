@@ -17,20 +17,16 @@ namespace petmat.Controllers
     public class MessagingController : BaseApiController
     {
         private readonly IMessagingService _messagingService;
-        private readonly IConfiguration _configuration;
         private readonly ILogger<MessagingController> _logger;
-        private readonly IHubContext<ChatHub> _hubContext;
+
 
         public MessagingController(
             IMessagingService messagingService,
-            IConfiguration configuration,
-            ILogger<MessagingController> logger,
-            IHubContext<ChatHub> hubContext)
+            ILogger<MessagingController> logger)
         {
             _messagingService = messagingService;
-            _configuration = configuration;
             _logger = logger;
-            _hubContext = hubContext;
+
         }
 
         private string GetUserId() =>
@@ -76,55 +72,19 @@ namespace petmat.Controllers
             {
                 var userId = GetUserId();
 
-                // Validate message type and content
-                if (dto.Type == MessageType.Text && string.IsNullOrWhiteSpace(dto.Content))
-                {
-                    return BadRequest(new ApiErrorResponse(400, "Text messages must have content"));
-                }
-
-                if (dto.Type != MessageType.Text && dto.MediaFile == null)
-                {
-                    return BadRequest(new ApiErrorResponse(400, $"{dto.Type} messages must include a media file"));
-                }
-
-                // Validate file type matches message type
-                if (dto.MediaFile != null)
-                {
-                    var validationError = ValidateFileType(dto.MediaFile, dto.Type);
-                    if (validationError != null)
-                    {
-                        return BadRequest(new ApiErrorResponse(400, validationError));
-                    }
-                }
-
+                // The service now handles validation, DB saving, and SignalR notifications
                 var result = await _messagingService.SendMessageAsync(userId, dto);
-
-                // Broadcast result via SignalR so recipient and sender update instantly (media URL will be included)
-                if (result != null && result.Success)
-                {
-                    var messageData = result.MessageData;
-                    if (messageData != null)
-                    {
-                        // Send to sender
-                        await _hubContext.Clients.User(userId).SendAsync("ReceivePrivateMessage", messageData);
-                        // Send to receiver
-                        await _hubContext.Clients.User(dto.ReceiverId).SendAsync("ReceivePrivateMessage", messageData);
-
-                        var unreadCount = await _messagingService.GetUnreadCountAsync(dto.ReceiverId);
-                        await _hubContext.Clients.User(dto.ReceiverId).SendAsync("UnreadMessagesCount", unreadCount);
-
-                        var senderConversations = await _messagingService.GetConversationsAsync(userId);
-                        await _hubContext.Clients.User(userId).SendAsync("ConversationsUpdated", senderConversations);
-
-                        var receiverConversations = await _messagingService.GetConversationsAsync(dto.ReceiverId);
-                        await _hubContext.Clients.User(dto.ReceiverId).SendAsync("ConversationsUpdated", receiverConversations);
-                    }
-                }
 
                 return Ok(result);
             }
+            catch (ArgumentException ex)
+            {
+                // Catches validation errors (invalid file type, empty text, etc.)
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
             catch (InvalidOperationException ex)
             {
+                // Catches logic errors (blocked user, receiver not found)
                 return BadRequest(new ApiErrorResponse(400, ex.Message));
             }
             catch (Exception ex)
@@ -133,37 +93,6 @@ namespace petmat.Controllers
                 return StatusCode(500, new ApiErrorResponse(500, "Failed to send message"));
             }
         }
-
-        private string ValidateFileType(IFormFile file, MessageType messageType)
-        {
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-
-            return messageType switch
-            {
-                MessageType.Image => !IsValidImageExtension(extension)
-                    ? "Invalid image file. Allowed: .jpg, .jpeg, .png, .gif, .webp"
-                    : null,
-
-                MessageType.Video => !IsValidVideoExtension(extension)
-                    ? "Invalid video file. Allowed: .mp4, .webm, .ogg, .mov, .avi, .mkv"
-                    : null,
-
-                MessageType.Document => !IsValidDocumentExtension(extension)
-                    ? "Invalid document file. Allowed: .pdf, .docx, .xlsx, .pptx, .txt, .rtf"
-                    : null,
-
-                _ => null
-            };
-        }
-
-        private bool IsValidImageExtension(string ext) =>
-            new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" }.Contains(ext);
-
-        private bool IsValidVideoExtension(string ext) =>
-            new[] { ".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv" }.Contains(ext);
-
-        private bool IsValidDocumentExtension(string ext) =>
-            new[] { ".pdf", ".docx", ".xlsx", ".pptx", ".txt", ".rtf" }.Contains(ext);
 
         // ==================== UNREAD COUNTS ====================
 

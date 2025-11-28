@@ -7,6 +7,7 @@ using AutoMapper;
 using CoreLayer.Dtos.Admin;
 using CoreLayer.Entities.Animals;
 using CoreLayer.Entities.Identity;
+using static CoreLayer.Dtos.Admin.AdminUsersManagementDTOs;
 
 namespace CoreLayer.AutoMapper.AdminMapping
 {

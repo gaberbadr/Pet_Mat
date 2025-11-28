@@ -8,7 +8,7 @@ using petmat.Errors;
 
 namespace petmat.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "AdminOrAssistant")]
     public class AdminNotificationController : BaseApiController
     {
         private readonly INotificationService _notificationService;
