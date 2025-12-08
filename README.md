@@ -13,40 +13,43 @@ docker compose -f docker-compose-production.yml pull && docker compose -f docker
 
 //.env
 
-# API Port
-API_PORT=5000
+# API Port (external port on your machine)
+API_PORT=
 
-# Database Password
-DB_PASSWORD=Your_password
+# Database Port (external port on your machine)
+DB_PORT=
 
-# Database Configuration
-ConnectionStrings__DefaultConnection=Server=db;Database=yourDataBase;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
+# Database Password for sql server connection string and mcr.microsoft.com/mssql/server:2022-latest password on docker
+DB_PASSWORD=
+
+# Database Configuration (for Docker Compose)
+ConnectionStrings__DefaultConnection=Server=db;Database=;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true;Connection Timeout=30;
 
 # JWT Configuration
-JWT__Key=dfdfdfdfdfdfdfddfdfdfd
+JWT__Key=
 JWT__Issuer=http://localhost:5000/
-JWT__Audience=Test
+JWT__Audience=PetMat
 JWT__AccessTokenExpirationMinutes=15
 JWT__RefreshTokenExpirationDays=7
 
 # SMTP Configuration
 SMTP__Host=smtp.gmail.com
 SMTP__Port=587
-SMTP__Email=Email@gmail.com
-SMTP__Password=pppppp
+SMTP__Email=
+SMTP__Password=
 
 # Google OAuth Configuration
-Authentication__Google__ClientId=gdfgfgfgf.com
-Authentication__Google__ClientSecret=Gfgfggf-fgfgfg
-
-# Stripe Configuration
-Stripe__Secretkey="sk_test_51ST"
-Stripe__WebhookSecret="whsec_4f"
+Authentication__Google__ClientId=
+Authentication__Google__ClientSecret=
 
 # Application Configuration
-BaseURL=http://localhost:5000/
-Frontend__BaseUrl=http://127.0.0.1:5500
-ASPNETCORE_URLS=http://+:8080
+BaseURL=
+Frontend__BaseUrl=
+ASPNETCORE_URLS=
+
+# Stripe Configuration
+Stripe__Secretkey=
+Stripe__WebhookSecret=
 
 
 ---------------------------------
