@@ -13,8 +13,9 @@ namespace CoreLayer.Dtos.Animals
 
     public class AddAnimalDto
     {
+        [Required]
         [MaxLength(100)]
-        public string? PetName { get; set; }
+        public string PetName { get; set; }
 
         [Required]
         public int SpeciesId { get; set; }
@@ -23,17 +24,20 @@ namespace CoreLayer.Dtos.Animals
 
         public int? ColorId { get; set; }
 
+        [Required]
         [MaxLength(50)]
-        public string? Age { get; set; }
+        public string Age { get; set; }
 
         [Required]
         public AnimalSize Size { get; set; }
         [Required]
         public Gender Gender { get; set; }
 
-        public string? Description { get; set; }
+        [Required]
+        public string Description { get; set; }
 
-        public List<IFormFile>? Image { get; set; }
+        [Required]
+        public List<IFormFile> Image { get; set; }
 
         public string? ExtraPropertiesJson { get; set; }
     }
