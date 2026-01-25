@@ -190,6 +190,14 @@ namespace petmat.Controllers
             }
         }
 
+        /// Get all ratings for a specific doctor
+        [HttpGet("doctor/{doctorId}/all-ratings")]
+        public async Task<ActionResult<DoctorRatingListDto>> GetDoctorAllRatings(string doctorId)
+        {
+            var ratings = await _userDoctorManagement.GetDoctorAllRatingsAsync(doctorId);
+            return Ok(ratings);
+        }
+
 
         // ==================== BROWSE PHARMACIES ====================
 
@@ -387,7 +395,13 @@ namespace petmat.Controllers
         }
 
 
-      
+        /// Get all ratings for a specific pharmacy
+        [HttpGet("pharmacies/{pharmacyId}/all-ratings")]
+        public async Task<ActionResult<PharmacyRatingListDto>> GetPharmacyAllRatings(string pharmacyId)
+        {
+            var ratings = await _userPharmacyManagement.GetPharmacyAllRatingsAsync(pharmacyId);
+            return Ok(ratings);
+        }
 
 
     }

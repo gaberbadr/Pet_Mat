@@ -257,6 +257,7 @@ namespace CoreLayer.Dtos.Pharmacy
     public class PublicPharmacyProfileDto
     {
         public Guid Id { get; set; }
+        public string UserId { get; set; }
         public string PharmacyName { get; set; }
         public string OwnerName { get; set; }
         public string ProfilePicture { get; set; }

@@ -112,6 +112,15 @@ namespace ServiceLayer.Services.Pharmacy
                 _unitOfWork.Repository<PharmacyProfile, Guid>().Delete(profile);
             }
 
+            // Delete Pharmacy ratings
+            var ratings = await _unitOfWork.Repository<PharmacyRating, int>()
+                .FindAsync(dr => dr.PharmacyId == userId);
+
+            foreach (var rating in ratings)
+            {
+                _unitOfWork.Repository<PharmacyRating, int>().Delete(rating);
+            }
+
             // Soft delete all pharmacy listings (not physical deletion)
             var listings = await _unitOfWork.Repository<PharmacyListing, int>()
                 .FindAsync(pl => pl.PharmacyId == userId && pl.IsActive);

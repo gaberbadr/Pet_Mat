@@ -192,6 +192,7 @@ namespace CoreLayer.Dtos.Doctor
     public class PublicDoctorProfileDto
     {
         public Guid Id { get; set; }
+        public string UserId { get; set; }
         public string DoctorName { get; set; }
         public string ProfilePicture { get; set; }
         public double Latitude { get; set; }

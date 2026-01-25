@@ -27,6 +27,7 @@ namespace CoreLayer.Service_Interface.User
         // Ratings (User)
         Task<RatingOperationResponseDto> RatePharmacyAsync(string pharmacyId, RatePharmacyDto dto, string userId);
         Task<RatingOperationResponseDto> UpdatePharmacyRatingAsync(string pharmacyId, RatePharmacyDto dto, string userId);
+        Task<PharmacyRatingListDto> GetPharmacyAllRatingsAsync(string pharmacyId);
     }
 }
 

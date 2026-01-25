@@ -55,6 +55,7 @@ namespace ServiceLayer.Services.User
             var doctorDtos = doctors.Select(dp => new PublicDoctorProfileDto
             {
                 Id = dp.Id,
+                UserId = dp.UserId,
                 DoctorName = $"{dp.User.FirstName} {dp.User.LastName}",
                 ProfilePicture = dp.User.ProfilePicture,
                 Specialization = dp.Specialization,
@@ -327,6 +328,7 @@ namespace ServiceLayer.Services.User
             return new PublicDoctorProfileDto
             {
                 Id = profile.Id,
+                UserId = profile.UserId,
                 DoctorName = $"{doctor.FirstName} {doctor.LastName}",
                 ProfilePicture = doctor.ProfilePicture,
                 Latitude = (double)profile.Latitude,
@@ -346,6 +348,56 @@ namespace ServiceLayer.Services.User
                 City = profile.User?.Address?.City,
                 Government = profile.User?.Address?.Government,
                 RecentRatings = recentRatings
+            };
+        }
+
+        // ==================== GET ALL DOCTOR RATINGS ====================
+
+        public async Task<DoctorRatingListDto> GetDoctorAllRatingsAsync(string doctorId)
+        {
+            // Verify doctor exists
+            var doctor = await _userManager.FindByIdAsync(doctorId);
+            if (doctor == null)
+                throw new KeyNotFoundException("Doctor not found");
+
+            var isDoctor = await _userManager.IsInRoleAsync(doctor, "Doctor");
+            if (!isDoctor)
+                throw new KeyNotFoundException("User is not a doctor");
+
+            // Get all ratings for this doctor
+            var ratings = await _unitOfWork.Repository<DoctorRating, int>()
+                .FindAsync(dr => dr.DoctorId == doctorId);
+
+            var ratingDtos = new List<DoctorRatingDto>();
+
+            foreach (var rating in ratings.OrderByDescending(r => r.CreatedAt))
+            {
+                var user = await _userManager.FindByIdAsync(rating.UserId);
+                if (user != null)
+                {
+                    ratingDtos.Add(new DoctorRatingDto
+                    {
+                        Id = rating.Id,
+                        UserName = $"{user.FirstName} {user.LastName}",
+                        UserProfilePicture = user.ProfilePicture,
+                        Rating = rating.Rating,
+                        Review = rating.Review,
+                        CommunicationRating = rating.CommunicationRating,
+                        KnowledgeRating = rating.KnowledgeRating,
+                        ResponsivenessRating = rating.ResponsivenessRating,
+                        ProfessionalismRating = rating.ProfessionalismRating,
+                        CreatedAt = rating.CreatedAt
+                    });
+                }
+            }
+
+            var averageRating = ratingDtos.Any() ? ratingDtos.Average(r => r.Rating) : 0;
+
+            return new DoctorRatingListDto
+            {
+                Count = ratingDtos.Count,
+                AverageRating = Math.Round(averageRating, 2),
+                Data = ratingDtos
             };
         }
     }

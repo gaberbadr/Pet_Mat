@@ -57,6 +57,7 @@ namespace ServiceLayer.Services.User
             var pharmacyDtos = pharmacies.Select(pp => new PublicPharmacyProfileDto
             {
                 Id = pp.Id,
+                UserId = pp.UserId,
                 PharmacyName = pp.PharmacyName,
                 OwnerName = $"{pp.User.FirstName} {pp.User.LastName}",
                 ProfilePicture = pp.User.ProfilePicture,
@@ -125,6 +126,7 @@ namespace ServiceLayer.Services.User
             return new PublicPharmacyProfileDto
             {
                 Id = profile.Id,
+                UserId = profile.UserId,
                 PharmacyName = profile.PharmacyName,
                 OwnerName = $"{pharmacy.FirstName} {pharmacy.LastName}",
                 ProfilePicture = pharmacy.ProfilePicture,
@@ -140,6 +142,56 @@ namespace ServiceLayer.Services.User
                 City = profile.User?.Address?.City,
                 Government = profile.User?.Address?.Government,
                 RecentRatings = recentRatings
+            };
+        }
+
+        // ==================== GET ALL PHARMACY RATINGS ====================
+
+        public async Task<PharmacyRatingListDto> GetPharmacyAllRatingsAsync(string pharmacyId)
+        {
+            // Verify pharmacy exists
+            var pharmacy = await _userManager.FindByIdAsync(pharmacyId);
+            if (pharmacy == null)
+                throw new KeyNotFoundException("Pharmacy not found");
+
+            var isPharmacy = await _userManager.IsInRoleAsync(pharmacy, "Pharmacy");
+            if (!isPharmacy)
+                throw new KeyNotFoundException("User is not a pharmacy");
+
+            // Get all ratings for this pharmacy
+            var ratings = await _unitOfWork.Repository<PharmacyRating, int>()
+                .FindAsync(pr => pr.PharmacyId == pharmacyId);
+
+            var ratingDtos = new List<PharmacyRatingDto>();
+
+            foreach (var rating in ratings.OrderByDescending(r => r.CreatedAt))
+            {
+                var user = await _userManager.FindByIdAsync(rating.UserId);
+                if (user != null)
+                {
+                    ratingDtos.Add(new PharmacyRatingDto
+                    {
+                        Id = rating.Id,
+                        UserName = $"{user.FirstName} {user.LastName}",
+                        UserProfilePicture = user.ProfilePicture,
+                        Rating = rating.Rating,
+                        Review = rating.Review,
+                        ServiceRating = rating.ServiceRating,
+                        ProductAvailabilityRating = rating.ProductAvailabilityRating,
+                        PricingRating = rating.PricingRating,
+                        LocationRating = rating.LocationRating,
+                        CreatedAt = rating.CreatedAt
+                    });
+                }
+            }
+
+            var averageRating = ratingDtos.Any() ? ratingDtos.Average(r => r.Rating) : 0;
+
+            return new PharmacyRatingListDto
+            {
+                Count = ratingDtos.Count,
+                AverageRating = Math.Round(averageRating, 2),
+                Data = ratingDtos
             };
         }
 
