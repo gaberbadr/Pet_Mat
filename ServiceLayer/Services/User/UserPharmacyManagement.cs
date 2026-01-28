@@ -71,7 +71,28 @@ namespace ServiceLayer.Services.User
                 AverageRating = pp.AverageRating,
                 TotalRatings = pp.TotalRatings,
                 City = pp.User?.Address?.City,
-                Government = pp.User?.Address?.Government
+                Government = pp.User?.Address?.Government,
+                RecentRatings = pp.Ratings
+                    .OrderByDescending(r => r.CreatedAt)
+                    .Take(5)
+                    .Select(r =>
+                    {
+                        var user = _userManager.FindByIdAsync(r.UserId).Result;
+                        return new PharmacyRatingDto
+                        {
+                            Id = r.Id,
+                            UserName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown User",
+                            UserProfilePicture = user?.ProfilePicture,
+                            Rating = r.Rating,
+                            Review = r.Review,
+                            ServiceRating = r.ServiceRating,
+                            ProductAvailabilityRating = r.ProductAvailabilityRating,
+                            PricingRating = r.PricingRating,
+                            LocationRating = r.LocationRating,
+                            CreatedAt = r.CreatedAt
+                        };
+                    })
+                    .ToList()
             }).ToList();
 
             // Return paginated response
