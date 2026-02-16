@@ -142,6 +142,7 @@ namespace CoreLayer.Specifications.Pharmacy
         {
             Includes.Add(pp => pp.User);
             Includes.Add(pp => pp.User.Address);
+            Includes.Add(pp => pp.Ratings);
 
             OrderByDescending = pp => pp.AverageRating;
 

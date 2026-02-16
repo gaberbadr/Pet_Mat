@@ -101,16 +101,17 @@ namespace CoreLayer.Specifications.Community
                 It loads their related User data.
 
                            
-                 ┣ 💬 Comment #1: "who is agree with me?" (Parent: NULL)
-                 ┃  ┣ ↪️ Reply #3: "i with you" (Parent: 1)
-                 ┃  ┃  ┣ ↪️ Reply #5: "are you blind mssi..." (Parent: 3)
-                 ┃  ┃  ┗ ↪️ Reply #6: "think again" (Parent: 3)
-                 ┃  ┃     ┗ ↪️ Reply #7: "nooooo cr7..." (Parent: 6)
-                 ┃  ┗ ↪️ Reply #4: "i dont think that" (Parent: 1)
+                 ┣ 💬 Comment #1: "who is agree with me?" (Parent: NULL)                  
+                 ┃  ┣ ↪️ Reply #3: "i with you" (Parent: 1)                                                     level 1
+                 ┃  ┃  ┣ ↪️ Reply #5: "are you blind mssi..." (Parent: 3)                           level 2       
+                 ┃  ┃  ┗ ↪️ Reply #6: "think again" (Parent: 3)                                            level 2
+                 ┃  ┃     ┗ ↪️ Reply #7: "nooooo cr7..." (Parent: 6)                                      level 3
+                 ┃  ┗ ↪️ Reply #4: "i dont think that" (Parent: 1)                                        level 1
                  ┃
                  ┗ 💬 Comment #2: "I think so" (Parent: NULL)
                     ┗ (no replies)
-            but in reply 7 if have more depth it will not load it because we stop at 3 levels deep
+            but in reply 7 if have more depth it will not load it because we stop just at 3 levels deep
+            so if some one reply on #7 it will not loaded 
              */
             #endregion
 

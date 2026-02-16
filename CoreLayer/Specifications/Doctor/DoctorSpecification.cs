@@ -17,6 +17,7 @@ namespace CoreLayer.Specifications
             // Include related data
             Includes.Add(dp => dp.User);
             Includes.Add(dp => dp.User.Address);
+            Includes.Add(dp => dp.Ratings);
 
 
             // Order by rating (highest first)

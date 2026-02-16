@@ -12,7 +12,8 @@ namespace CoreLayer.Dtos.Doctor
     // ==================== INPUT DTOs ====================
 
     public class DoctorFilterParams
-    { public string? Specialization { get; set; }
+    { 
+        public string? Specialization { get; set; }
         public int? MinExperienceYears { get; set; }
         public string? City { get; set; } 
         public string? Government { get; set; } 
