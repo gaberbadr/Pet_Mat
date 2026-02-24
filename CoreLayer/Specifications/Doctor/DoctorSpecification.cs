@@ -18,6 +18,7 @@ namespace CoreLayer.Specifications
             Includes.Add(dp => dp.User);
             Includes.Add(dp => dp.User.Address);
             Includes.Add(dp => dp.Ratings);
+            AddInclude("Ratings.User");
 
 
             // Order by rating (highest first)
@@ -34,7 +35,6 @@ namespace CoreLayer.Specifications
         {
             return dp =>
                 dp.IsActive == true &&
-                 dp.IsActive == true &&
                 (string.IsNullOrEmpty(filterParams.Specialization) || dp.Specialization.ToLower() == filterParams.Specialization.ToLower()) &&
                 (!filterParams.MinExperienceYears.HasValue || dp.ExperienceYears >= filterParams.MinExperienceYears.Value) &&
 

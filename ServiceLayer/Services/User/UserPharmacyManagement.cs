@@ -77,12 +77,11 @@ namespace ServiceLayer.Services.User
                     .Take(5)
                     .Select(r =>
                     {
-                        var user = _userManager.FindByIdAsync(r.UserId).Result;
                         return new PharmacyRatingDto
                         {
                             Id = r.Id,
-                            UserName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown User",
-                            UserProfilePicture = user?.ProfilePicture,
+                            UserName = r.User != null ? $"{r.User.FirstName} {r.User.LastName}" : "Unknown User",
+                            UserProfilePicture = r.User?.ProfilePicture,
                             Rating = r.Rating,
                             Review = r.Review,
                             ServiceRating = r.ServiceRating,
@@ -122,28 +121,6 @@ namespace ServiceLayer.Services.User
             if (profile == null)
                 throw new KeyNotFoundException("Pharmacy profile not found");
 
-            // Get recent ratings
-            var recentRatings = profile.Ratings
-                .OrderByDescending(r => r.CreatedAt)
-                .Take(10)
-                .Select(r =>
-                {
-                    var user = _userManager.FindByIdAsync(r.UserId).Result;
-                    return new PharmacyRatingDto
-                    {
-                        Id = r.Id,
-                        UserName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown User",
-                        UserProfilePicture = user?.ProfilePicture,
-                        Rating = r.Rating,
-                        Review = r.Review,
-                        ServiceRating = r.ServiceRating,
-                        ProductAvailabilityRating = r.ProductAvailabilityRating,
-                        PricingRating = r.PricingRating,
-                        LocationRating = r.LocationRating,
-                        CreatedAt = r.CreatedAt
-                    };
-                }).ToList();
-
             return new PublicPharmacyProfileDto
             {
                 Id = profile.Id,
@@ -162,7 +139,26 @@ namespace ServiceLayer.Services.User
                 TotalRatings = profile.TotalRatings,
                 City = profile.User?.Address?.City,
                 Government = profile.User?.Address?.Government,
-                RecentRatings = recentRatings
+                RecentRatings = profile.Ratings
+                    .OrderByDescending(r => r.CreatedAt)
+                    .Take(5)
+                    .Select(r =>
+                    {
+                        return new PharmacyRatingDto
+                        {
+                            Id = r.Id,
+                            UserName = r.User != null ? $"{r.User.FirstName} {r.User.LastName}" : "Unknown User",
+                            UserProfilePicture = r.User?.ProfilePicture,
+                            Rating = r.Rating,
+                            Review = r.Review,
+                            ServiceRating = r.ServiceRating,
+                            ProductAvailabilityRating = r.ProductAvailabilityRating,
+                            PricingRating = r.PricingRating,
+                            LocationRating = r.LocationRating,
+                            CreatedAt = r.CreatedAt
+                        };
+                    })
+                    .ToList()
             };
         }
 

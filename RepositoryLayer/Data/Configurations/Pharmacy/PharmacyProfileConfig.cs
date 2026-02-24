@@ -16,6 +16,11 @@ namespace RepositoryLayer.Data.Configurations.Pharmacy
             builder.HasIndex(pp => pp.UserId).IsUnique();
             builder.HasIndex(pp => pp.IsActive);
             builder.HasIndex(pp => new { pp.Latitude, pp.Longitude });
+
+            builder.HasMany(pp => pp.Ratings)
+                  .WithOne()
+                  .HasForeignKey(pr => pr.PharmacyId)
+                  .HasPrincipalKey(pp => pp.UserId);  // Link PharmacyId (FK) in Ratings to UserId (Alternate Key) in PharmacyProfile
         }
     }
 }

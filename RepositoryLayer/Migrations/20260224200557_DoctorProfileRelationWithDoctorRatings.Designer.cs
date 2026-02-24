@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RepositoryLayer.Data.Context;
 
@@ -11,9 +12,11 @@ using RepositoryLayer.Data.Context;
 namespace RepositoryLayer.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260224200557_DoctorProfileRelationWithDoctorRatings")]
+    partial class DoctorProfileRelationWithDoctorRatings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1626,6 +1629,9 @@ namespace RepositoryLayer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<Guid?>("PharmacyProfileId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("PricingRating")
                         .HasColumnType("int");
 
@@ -1649,6 +1655,8 @@ namespace RepositoryLayer.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PharmacyId");
+
+                    b.HasIndex("PharmacyProfileId");
 
                     b.HasIndex("UserId");
 
@@ -2226,10 +2234,7 @@ namespace RepositoryLayer.Migrations
 
                     b.HasOne("CoreLayer.Entities.Pharmacies.PharmacyProfile", null)
                         .WithMany("Ratings")
-                        .HasForeignKey("PharmacyId")
-                        .HasPrincipalKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PharmacyProfileId");
 
                     b.HasOne("CoreLayer.Entities.Identity.ApplicationUser", "User")
                         .WithMany("PharmacyRatingsGiven")

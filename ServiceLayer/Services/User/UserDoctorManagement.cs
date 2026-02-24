@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -66,28 +67,23 @@ namespace ServiceLayer.Services.User
                 TotalRatings = dp.TotalRatings,
                 City = dp.User?.Address?.City,
                 Government = dp.User?.Address?.Government,
-                RecentRatings = dp.Ratings
-                    .OrderByDescending(r => r.CreatedAt)
-                    .Take(5)
-                    .Select(r =>
-                    {
-                        var user = _userManager.FindByIdAsync(r.UserId).Result;
-                        return new DoctorRatingDto
-                        {
-                            Id = r.Id,
-                            UserName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown User",
-                            UserProfilePicture = user?.ProfilePicture,
-                            Rating = r.Rating,
-                            Review = r.Review,
-                            CommunicationRating = r.CommunicationRating,
-                            KnowledgeRating = r.KnowledgeRating,
-                            ResponsivenessRating = r.ResponsivenessRating,
-                            ProfessionalismRating = r.ProfessionalismRating,
-                            CreatedAt = r.CreatedAt
-                        };
-                    })
-                    .ToList()
-            }).ToList();
+                RecentRatings = dp.Ratings?
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(5)
+                .Select(r => new DoctorRatingDto
+                {
+                    Id = r.Id,
+                    UserName = r.User != null ? $"{r.User.FirstName} {r.User.LastName}" : "Unknown User",
+                    UserProfilePicture = r.User?.ProfilePicture,
+                    Rating = r.Rating,
+                    Review = r.Review,
+                    CommunicationRating = r.CommunicationRating,
+                    KnowledgeRating = r.KnowledgeRating,
+                    ResponsivenessRating = r.ResponsivenessRating,
+                    ProfessionalismRating = r.ProfessionalismRating,
+                    CreatedAt = r.CreatedAt
+                }).ToList() ?? new List<DoctorRatingDto>()
+                        }).ToList();
 
             // Return paginated response
             return new PaginationResponse<PublicDoctorProfileDto>(
@@ -324,28 +320,6 @@ namespace ServiceLayer.Services.User
             if (profile == null)
                 throw new KeyNotFoundException("Doctor profile not found");
 
-            // Get recent ratings
-            var recentRatings = profile.Ratings
-                .OrderByDescending(r => r.CreatedAt)
-                .Take(10)
-                .Select(r =>
-                {
-                    var user = _userManager.FindByIdAsync(r.UserId).Result;
-                    return new DoctorRatingDto
-                    {
-                        Id = r.Id,
-                        UserName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown User",
-                        UserProfilePicture = user?.ProfilePicture,
-                        Rating = r.Rating,
-                        Review = r.Review,
-                        CommunicationRating = r.CommunicationRating,
-                        KnowledgeRating = r.KnowledgeRating,
-                        ResponsivenessRating = r.ResponsivenessRating,
-                        ProfessionalismRating = r.ProfessionalismRating,
-                        CreatedAt = r.CreatedAt
-                    };
-                }).ToList();
-
             return new PublicDoctorProfileDto
             {
                 Id = profile.Id,
@@ -368,7 +342,22 @@ namespace ServiceLayer.Services.User
                 TotalRatings = profile.TotalRatings,
                 City = profile.User?.Address?.City,
                 Government = profile.User?.Address?.Government,
-                RecentRatings = recentRatings
+                RecentRatings = profile.Ratings?
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(5)
+                .Select(r => new DoctorRatingDto
+                {
+                    Id = r.Id,
+                    UserName = r.User != null ? $"{r.User.FirstName} {r.User.LastName}" : "Unknown User",
+                    UserProfilePicture = r.User?.ProfilePicture,
+                    Rating = r.Rating,
+                    Review = r.Review,
+                    CommunicationRating = r.CommunicationRating,
+                    KnowledgeRating = r.KnowledgeRating,
+                    ResponsivenessRating = r.ResponsivenessRating,
+                    ProfessionalismRating = r.ProfessionalismRating,
+                    CreatedAt = r.CreatedAt
+                }).ToList() ?? new List<DoctorRatingDto>()
             };
         }
 

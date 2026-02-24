@@ -17,6 +17,11 @@ namespace RepositoryLayer.Data.Configurations.Doctors
             builder.HasIndex(dp => dp.IsActive);
             builder.HasIndex(dp => new { dp.Latitude, dp.Longitude });
             builder.HasIndex(dp => dp.Specialization);
+
+            builder.HasMany(dp => dp.Ratings)
+                   .WithOne()
+                   .HasForeignKey(dr => dr.DoctorId)
+                   .HasPrincipalKey(dp => dp.UserId); //we link the DoctorId(fk) in Ratings table with UserId secondary key in DoctorProfile table, not the primary key Id of DoctorProfile
         }
     }
 }
