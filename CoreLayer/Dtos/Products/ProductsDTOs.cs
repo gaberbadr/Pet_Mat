@@ -82,9 +82,9 @@ namespace CoreLayer.Dtos.Products
         public int? SpeciesId { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
-        public string Search { get; set; }
+        public string? Search { get; set; }
         public bool? InStock { get; set; }
-        public string SortBy { get; set; } // "price_asc", "price_desc", "name", "newest"
+        public string? SortBy { get; set; } // "price_asc", "price_desc", "name", "newest"
     }
 
     // ==================== BRAND DTOs ====================
