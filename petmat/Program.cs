@@ -48,7 +48,9 @@ namespace petmat
             // Add dependency injection
             builder.Services.AddDependency(builder.Configuration);
 
-          
+            //for chatbot
+            builder.Services.AddHttpClient();
+
             var app = builder.Build();
 
             // Apply migrations
