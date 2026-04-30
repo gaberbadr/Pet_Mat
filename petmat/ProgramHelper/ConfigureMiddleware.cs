@@ -31,8 +31,10 @@ namespace petmat.ProgramHelper
             // Enable serving static files
             app.UseStaticFiles();
 
-            // Configure file serving
-            var filesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files");
+            // Configure file serving safely using the WebHost Environment paths
+            var webRootPath = app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+            var filesPath = Path.Combine(webRootPath, "files");
+
             if (!Directory.Exists(filesPath))
             {
                 Directory.CreateDirectory(filesPath);
