@@ -17,7 +17,8 @@ namespace petmat.Controllers
         public ChatBotController(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory;
-            _chatbotBaseUrl = configuration["AleefChatbot:BaseUrl"] ?? "http://localhost:8000";
+            // Updated fallback to host.docker.internal for Docker compatibility
+            _chatbotBaseUrl = configuration["AleefChatbot:BaseUrl"] ?? "http://host.docker.internal:8000";
         }
 
         [HttpPost("chat")]
