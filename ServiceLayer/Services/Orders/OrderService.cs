@@ -51,11 +51,19 @@ namespace ServiceLayer.Services.Orders
 
             // If online payment requested, create a payment intent for current cart totals
             PaymentIntentResponseDto createdIntent = null;
+            string paymentIntentId = null;
+            string clientSecret = null;
+
             if (dto.PaymentMethod == PaymentMethod.Online)
             {
                 createdIntent = await _paymentService.CreateOrUpdatePaymentIntentAsync(userId);
                 if (createdIntent == null)
                     throw new InvalidOperationException("Failed to create payment intent");
+
+                paymentIntentId = createdIntent.PaymentIntentId;
+                clientSecret = createdIntent.ClientSecret;
+                
+                Console.WriteLine($"[OrderService] Created PaymentIntent: {paymentIntentId}");
             }
 
             // Validate and create order items & reduce stock
@@ -137,10 +145,6 @@ namespace ServiceLayer.Services.Orders
                 ? OrderStatus.PendingPayment
                 : OrderStatus.Pending;
 
-            // Attach created payment intent info to order (if any)
-            var paymentIntentId = dto.PaymentMethod == PaymentMethod.Online ? createdIntent?.PaymentIntentId : null;
-            var clientSecret = dto.PaymentMethod == PaymentMethod.Online ? createdIntent?.ClientSecret : null;
-
             // Create order
             var order = new Order
             {
@@ -153,8 +157,8 @@ namespace ServiceLayer.Services.Orders
                 SubTotal = subtotal,
                 DiscountAmount = discountAmount,
                 CouponCode = couponCode,
-                PaymentIntentId = paymentIntentId,
-                ClientSecret = clientSecret,
+                PaymentIntentId = paymentIntentId,  
+                ClientSecret = clientSecret,        
                 ShippingAddress = shippingAddress,
                 Items = orderItems,
                 CreatedAt = DateTime.UtcNow
@@ -162,6 +166,8 @@ namespace ServiceLayer.Services.Orders
 
             await _unitOfWork.Repository<Order, int>().AddAsync(order);
             await _unitOfWork.CompleteAsync();
+
+            Console.WriteLine($"[OrderService] ✓ Order created with ID: {order.Id}, PaymentIntentId: {order.PaymentIntentId}");
 
             // Clear cart items and reset cart metadata
             await _unitOfWork.Repository<CartItem, int>().DeleteRangeAsync(ci => ci.CartId == cart.Id);
