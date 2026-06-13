@@ -128,20 +128,33 @@ namespace ServiceLayer.Services.Orders
 
         public async Task<OrderDto> UpdatePaymentIntentStatusAsync(string paymentIntentId, bool isSuccessful)
         {
+            Console.WriteLine($"[PaymentService] UpdatePaymentIntentStatusAsync called with paymentIntentId={paymentIntentId}, isSuccessful={isSuccessful}");
+
             var spec = new OrderByPaymentIntentIdSpecification(paymentIntentId);
             var order = await _unitOfWork.Repository<Order, int>().GetWithSpecficationAsync(spec);
 
             if (order == null)
+            {
+                Console.WriteLine($"[PaymentService] ERROR: Order not found for paymentIntentId={paymentIntentId}");
                 throw new KeyNotFoundException($"Order not found for payment intent: {paymentIntentId}");
+            }
+
+            Console.WriteLine($"[PaymentService] Found order ID={order.Id}, current status={order.Status}");
 
             // If success -> move to Processing (idempotent)
             if (isSuccessful)
             {
                 if (order.Status != OrderStatus.Processing)
                 {
+                    Console.WriteLine($"[PaymentService] Updating order {order.Id} from {order.Status} to Processing");
                     order.Status = OrderStatus.Processing;
                     _unitOfWork.Repository<Order, int>().Update(order);
                     await _unitOfWork.CompleteAsync();
+                    Console.WriteLine($"[PaymentService] Order {order.Id} successfully updated to Processing");
+                }
+                else
+                {
+                    Console.WriteLine($"[PaymentService] Order {order.Id} already in Processing status (idempotent)");
                 }
             }
             else
@@ -149,6 +162,8 @@ namespace ServiceLayer.Services.Orders
                 // On payment failure -> cancel order and restore stock (idempotent)
                 if (order.Status != OrderStatus.Cancelled)
                 {
+                    Console.WriteLine($"[PaymentService] Cancelling order {order.Id} and restoring stock");
+
                     // Restore product stock
                     foreach (var item in order.Items)
                     {
@@ -163,6 +178,11 @@ namespace ServiceLayer.Services.Orders
                     order.Status = OrderStatus.Cancelled;
                     _unitOfWork.Repository<Order, int>().Update(order);
                     await _unitOfWork.CompleteAsync();
+                    Console.WriteLine($"[PaymentService] Order {order.Id} successfully cancelled");
+                }
+                else
+                {
+                    Console.WriteLine($"[PaymentService] Order {order.Id} already cancelled (idempotent)");
                 }
             }
 
@@ -172,6 +192,8 @@ namespace ServiceLayer.Services.Orders
 
             var deliveryCost = order.DeliveryMethod?.Cost ?? 0;
             var total = order.SubTotal - order.DiscountAmount + deliveryCost;
+
+            Console.WriteLine($"[PaymentService] Returning updated order DTO for order {order.Id}");
 
             return new OrderDto
             {

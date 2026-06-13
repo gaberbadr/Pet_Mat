@@ -38,25 +38,53 @@ namespace petmat.Controllers
                     webhookSecret
                 );
 
-                var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
+                Console.WriteLine($"[Stripe Webhook] Event Type: {stripeEvent.Type}");
+                Console.WriteLine($"[Stripe Webhook] Event ID: {stripeEvent.Id}");
 
                 if (stripeEvent.Type == "payment_intent.succeeded")
                 {
+                    var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
+                    if (paymentIntent == null)
+                    {
+                        Console.WriteLine("[Stripe Webhook] ERROR: PaymentIntent is null for payment_intent.succeeded event");
+                        return BadRequest(new ApiErrorResponse(400, "Invalid PaymentIntent data"));
+                    }
+
+                    Console.WriteLine($"[Stripe Webhook] Processing payment_intent.succeeded: {paymentIntent.Id}");
                     await _paymentService.UpdatePaymentIntentStatusAsync(paymentIntent.Id, true);
                 }
                 else if (stripeEvent.Type == "payment_intent.payment_failed")
                 {
+                    var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
+                    if (paymentIntent == null)
+                    {
+                        Console.WriteLine("[Stripe Webhook] ERROR: PaymentIntent is null for payment_intent.payment_failed event");
+                        return BadRequest(new ApiErrorResponse(400, "Invalid PaymentIntent data"));
+                    }
+
+                    Console.WriteLine($"[Stripe Webhook] Processing payment_intent.payment_failed: {paymentIntent.Id}");
                     await _paymentService.UpdatePaymentIntentStatusAsync(paymentIntent.Id, false);
+                }
+                else
+                {
+                    Console.WriteLine($"[Stripe Webhook] Ignoring event type: {stripeEvent.Type}");
                 }
 
                 return Ok();
             }
-            catch (StripeException)
+            catch (StripeException ex)
             {
+                Console.WriteLine($"[Stripe Webhook] StripeException: {ex.Message}");
                 return BadRequest(new ApiErrorResponse(400, "Webhook signature verification failed"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                Console.WriteLine($"[Stripe Webhook] KeyNotFoundException: {ex.Message}");
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[Stripe Webhook] Unexpected error: {ex.GetType().Name} - {ex.Message}");
                 return BadRequest(new ApiErrorResponse(400, ex.Message));
             }
         }
