@@ -12,11 +12,13 @@ namespace petmat.Controllers
     {
         private readonly IPaymentService _paymentService;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<PaymentController> _logger;
 
-        public PaymentController(IPaymentService paymentService, IConfiguration configuration)
+        public PaymentController(IPaymentService paymentService, IConfiguration configuration, ILogger<PaymentController> logger)
         {
             _paymentService = paymentService;
             _configuration = configuration;
+            _logger = logger;
         }
 
 
@@ -38,35 +40,23 @@ namespace petmat.Controllers
                     webhookSecret
                 );
 
-                Console.WriteLine($"[Stripe Webhook] Event Type: {stripeEvent.Type}");
-                Console.WriteLine($"[Stripe Webhook] Event ID: {stripeEvent.Id}");
-                Console.WriteLine($"[Stripe Webhook] Event Data Object Type: {stripeEvent.Data.Object?.GetType().Name}");
-
                 if (stripeEvent.Type == "payment_intent.succeeded")
                 {
                     var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
                     if (paymentIntent == null)
                     {
-                        Console.WriteLine("[Stripe Webhook] ERROR: PaymentIntent is null for payment_intent.succeeded event");
+                        _logger.LogError("PaymentIntent is null for payment_intent.succeeded event");
                         return BadRequest(new ApiErrorResponse(400, "Invalid PaymentIntent data"));
                     }
-
-                    Console.WriteLine($"[Stripe Webhook] Processing payment_intent.succeeded");
-                    Console.WriteLine($"[Stripe Webhook] PaymentIntent ID: {paymentIntent.Id}");
-                    Console.WriteLine($"[Stripe Webhook] Amount: {paymentIntent.Amount}");
-                    Console.WriteLine($"[Stripe Webhook] Status: {paymentIntent.Status}");
 
                     try
                     {
                         await _paymentService.UpdatePaymentIntentStatusAsync(paymentIntent.Id, true);
-                        Console.WriteLine($"[Stripe Webhook] ✓ Order status updated successfully for {paymentIntent.Id}");
+                        _logger.LogInformation("Order status updated successfully for {PaymentIntentId}", paymentIntent.Id);
                     }
                     catch (KeyNotFoundException ex)
                     {
-                        Console.WriteLine($"[Stripe Webhook] ⚠ Order not found for PaymentIntentId: {paymentIntent.Id}");
-                        Console.WriteLine($"[Stripe Webhook] Exception: {ex.Message}");
-                        // Still return 200 to acknowledge receipt (Stripe will retry if we return error)
-                        // This prevents duplicate webhooks
+                        _logger.LogWarning("Order not found for PaymentIntentId: {PaymentIntentId}", paymentIntent.Id);
                         return Ok();
                     }
                 }
@@ -75,40 +65,32 @@ namespace petmat.Controllers
                     var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
                     if (paymentIntent == null)
                     {
-                        Console.WriteLine("[Stripe Webhook] ERROR: PaymentIntent is null for payment_intent.payment_failed event");
+                        _logger.LogError("PaymentIntent is null for payment_intent.payment_failed event");
                         return BadRequest(new ApiErrorResponse(400, "Invalid PaymentIntent data"));
                     }
-
-                    Console.WriteLine($"[Stripe Webhook] Processing payment_intent.payment_failed: {paymentIntent.Id}");
 
                     try
                     {
                         await _paymentService.UpdatePaymentIntentStatusAsync(paymentIntent.Id, false);
-                        Console.WriteLine($"[Stripe Webhook] ✓ Order cancelled successfully for {paymentIntent.Id}");
+                        _logger.LogInformation("Order cancelled successfully for {PaymentIntentId}", paymentIntent.Id);
                     }
                     catch (KeyNotFoundException ex)
                     {
-                        Console.WriteLine($"[Stripe Webhook] ⚠ Order not found for PaymentIntentId: {paymentIntent.Id}");
-                        Console.WriteLine($"[Stripe Webhook] Exception: {ex.Message}");
+                        _logger.LogWarning("Order not found for PaymentIntentId: {PaymentIntentId}", paymentIntent.Id);
                         return Ok();
                     }
-                }
-                else
-                {
-                    Console.WriteLine($"[Stripe Webhook] Ignoring event type: {stripeEvent.Type}");
                 }
 
                 return Ok();
             }
             catch (StripeException ex)
             {
-                Console.WriteLine($"[Stripe Webhook] StripeException: {ex.Message}");
+                _logger.LogError("StripeException: {Message}", ex.Message);
                 return BadRequest(new ApiErrorResponse(400, "Webhook signature verification failed"));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Stripe Webhook] Unexpected error: {ex.GetType().Name} - {ex.Message}");
-                Console.WriteLine($"[Stripe Webhook] Stack Trace: {ex.StackTrace}");
+                _logger.LogError(ex, "Unexpected error in Stripe webhook");
                 return BadRequest(new ApiErrorResponse(400, ex.Message));
             }
         }
