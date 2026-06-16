@@ -91,7 +91,6 @@ namespace petmat.Controllers
 
 
         /// Delete doctor account (removes profile, application, and doctor role)
-        [RequireSubscription]
         [ProducesResponseType(typeof(DoctorProfileOperationResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
         [HttpDelete("account")]
