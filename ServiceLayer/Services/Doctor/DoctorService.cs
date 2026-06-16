@@ -8,6 +8,8 @@ using CoreLayer;
 using CoreLayer.Dtos.Doctor;
 using CoreLayer.Entities.Doctors;
 using CoreLayer.Entities.Identity;
+using CoreLayer.Entities.Orders;
+using CoreLayer.Enums;
 using CoreLayer.Helper.Documents;
 using CoreLayer.Service_Interface.Doctor;
 using Microsoft.AspNetCore.Identity;

@@ -148,6 +148,15 @@ namespace CoreLayer.Enums
             Online = 1,           // Pay with Stripe
             CashOnDelivery = 2    // Pay upon receipt
         }
+
+    public enum SubscriptionStatus
+    {
+        Pending,
+        Active,
+        Expired,
+        Cancelled,
+        Failed
+    }
 }
 
 //change data type of entity

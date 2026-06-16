@@ -25,6 +25,8 @@ namespace CoreLayer.Repository_Interface
 
         // ==================== QUERY OPERATIONS ====================
         Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
+
+        Task<TEntity?> FindFirstAsync(Expression<Func<TEntity, bool>> predicate);
         Task<int> DeleteRangeAsync(Expression<Func<TEntity, bool>> predicate);
         Task AddRangeAsync(IEnumerable<TEntity> entities);
 

@@ -48,6 +48,7 @@ namespace RepositoryLayer.Data.Context
         public DbSet<DoctorApply> DoctorApplications { get; set; }
         public DbSet<DoctorProfile> DoctorProfiles { get; set; }
         public DbSet<DoctorRating> DoctorRatings { get; set; }
+        public DbSet<DoctorSubscription> DoctorSubscriptions { get; set; }
         public DbSet<PharmacyApply> PharmacyApplications { get; set; }
         public DbSet<PharmacyProfile> PharmacyProfiles { get; set; }
         public DbSet<PharmacyListing> PharmacyListings { get; set; }

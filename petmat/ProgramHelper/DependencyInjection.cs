@@ -70,6 +70,7 @@ namespace petmat.ProgramHelper
             services.AddSignalRServices();
 
             services.AddHostedService<ExpiredOrderCleanupService>();
+            services.AddHostedService<ExpiredSubscriptionCleanupService>();
 
             services.AddMemoryCache();
             services.AddResponseCaching();
@@ -211,6 +212,8 @@ namespace petmat.ProgramHelper
             services.AddScoped<ICommunityService, CommunityService>();
             services.AddScoped<IMessagingService, MessagingService>();
             services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IPackageService, PackageService>();
+            services.AddScoped<IDoctorSubscriptionService, DoctorSubscriptionService>();
 
             return services;
         }

@@ -51,6 +51,10 @@ namespace CoreLayer.Entities.Doctors
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        public bool HasSubscription { get; set; } = false;
+
+        public ICollection<DoctorSubscription> Subscriptions { get; set; }
+
         // Navigation Properties
         [ForeignKey("UserId")]
         public ApplicationUser User { get; set; }

@@ -63,6 +63,12 @@ public class GenaricRepository<TEntity, TKey> : IGenaricRepository<TEntity, TKey
     {
         return await _dbContext.Set<TEntity>().Where(predicate).ToListAsync();
     }
+    public async Task<TEntity?> FindFirstAsync(
+    Expression<Func<TEntity, bool>> predicate)
+    {
+        return await _dbContext.Set<TEntity>()
+            .FirstOrDefaultAsync(predicate);
+    }
 
     public async Task<int> DeleteRangeAsync(Expression<Func<TEntity, bool>> predicate)
     {

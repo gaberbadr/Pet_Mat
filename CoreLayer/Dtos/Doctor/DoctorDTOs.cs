@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoreLayer.Enums;
+using CoreLayer.Specifications.Doctor;
 using Microsoft.AspNetCore.Http;
 
 namespace CoreLayer.Dtos.Doctor
@@ -188,6 +189,7 @@ namespace CoreLayer.Dtos.Doctor
         public double AverageRating { get; set; }
         public int TotalRatings { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool HasSubscription { get; set; }
     }
 
     public class PublicDoctorProfileDto

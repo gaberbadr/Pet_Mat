@@ -4,6 +4,7 @@ using CoreLayer.Service_Interface.Doctor;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using petmat.Attributes;
 using petmat.Errors;
 
 namespace petmat.Controllers
@@ -42,6 +43,7 @@ namespace petmat.Controllers
 
 
         /// Update current doctor's profile
+        [RequireSubscription]
         [ProducesResponseType(typeof(DoctorProfileOperationResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -65,6 +67,7 @@ namespace petmat.Controllers
 
 
         /// Update doctor's location (Latitude and Longitude)
+        [RequireSubscription]
         [ProducesResponseType(typeof(DoctorProfileOperationResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiValidationErrorResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -88,6 +91,7 @@ namespace petmat.Controllers
 
 
         /// Delete doctor account (removes profile, application, and doctor role)
+        [RequireSubscription]
         [ProducesResponseType(typeof(DoctorProfileOperationResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
         [HttpDelete("account")]

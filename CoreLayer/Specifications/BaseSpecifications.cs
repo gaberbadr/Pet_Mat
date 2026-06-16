@@ -39,6 +39,20 @@ namespace CoreLayer.Specifications
             IncludeStrings.Add(includeString);
         }
 
+        protected void AddInclude(Expression<Func<TEntity, object>> includeExpression)
+        {
+            Includes.Add(includeExpression);
+        }
+
+        protected void AddOrderBy(Expression<Func<TEntity, object>> orderByExpression)
+        {
+            OrderBy = orderByExpression;
+        }
+
+        protected void AddOrderByDescending(Expression<Func<TEntity, object>> orderByDescendingExpression)
+        {
+            OrderByDescending = orderByDescendingExpression;
+        }
 
     }
 }

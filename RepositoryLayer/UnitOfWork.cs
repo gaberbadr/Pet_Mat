@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,54 +15,64 @@ namespace RepositoryLayer
 {
     public class UnitOfWork : IUnitOfWork, IDisposable
     {
-        private readonly ApplicationDbContext _StoreDBContext;
+        private readonly ApplicationDbContext _storeDbContext;
+        private readonly Hashtable _hashtableRepos;
+        private bool _disposed = false;
 
-        private Hashtable _HashtableRepos;
-
-        public UnitOfWork(ApplicationDbContext storeDBContext)
+        public UnitOfWork(ApplicationDbContext storeDbContext)
         {
-            _StoreDBContext = storeDBContext;
-            _HashtableRepos = new Hashtable();
+            _storeDbContext = storeDbContext;
+            _hashtableRepos = new Hashtable();
         }
+
+        // Commits all pending changes to the database
         public async Task<int> CompleteAsync()
         {
             try
             {
-                return await _StoreDBContext.SaveChangesAsync();
+                return await _storeDbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                throw new InvalidOperationException(
+                    "A concurrency conflict occurred. The data may have been modified by another process.", ex);
             }
             catch (DbUpdateException ex)
             {
-                Console.WriteLine("🔥 DB Update Error:");
-                Console.WriteLine(ex.InnerException?.Message ?? ex.Message);
-                throw;
+                throw new InvalidOperationException(
+                    "SaveChangesAsync failed. Please check your data and try again.", ex);
+            }
+            catch (OperationCanceledException ex)
+            {
+                throw new InvalidOperationException("The operation was cancelled.", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"An unexpected error occurred: {ex.GetType().Name}. {ex.Message}", ex);
             }
         }
 
+        // Returns or creates a generic repository for the specified entity type
         public IGenaricRepository<TEntity, Tkey> Repository<TEntity, Tkey>() where TEntity : BaseEntity<Tkey>
         {
-
-
             var type = typeof(TEntity).Name;
 
-            if (!_HashtableRepos.ContainsKey(type))
+            if (!_hashtableRepos.ContainsKey(type))
             {
-                var repo = new GenaricRepository<TEntity, Tkey>(_StoreDBContext);
-                _HashtableRepos.Add(type, repo);
+                var repo = new GenaricRepository<TEntity, Tkey>(_storeDbContext);
+                _hashtableRepos.Add(type, repo);
             }
 
-            return _HashtableRepos[type] as IGenaricRepository<TEntity, Tkey>;
+            return _hashtableRepos[type] as IGenaricRepository<TEntity, Tkey>;
         }
 
-        private bool _disposed = false;
-
+        // Disposes the DbContext
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (!_disposed && disposing)
             {
-                if (disposing)
-                {
-                    _StoreDBContext.Dispose();
-                }
+                _storeDbContext?.Dispose();
                 _disposed = true;
             }
         }
@@ -71,6 +82,5 @@ namespace RepositoryLayer
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
     }
 }
