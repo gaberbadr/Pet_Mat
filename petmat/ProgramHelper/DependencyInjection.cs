@@ -214,6 +214,7 @@ namespace petmat.ProgramHelper
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IPackageService, PackageService>();
             services.AddScoped<IDoctorSubscriptionService, DoctorSubscriptionService>();
+            services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 
             return services;
         }
