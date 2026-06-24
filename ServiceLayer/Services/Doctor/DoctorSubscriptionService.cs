@@ -298,5 +298,39 @@ namespace ServiceLayer.Services.Doctor
             _unitOfWork.Repository<DoctorSubscription, int>().Update(entity);
             await _unitOfWork.CompleteAsync();
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // ─── Delete Subscription ───────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────────────
+
+        public async Task DeleteSubscriptionAsync(string doctorId)
+        {
+            if (string.IsNullOrWhiteSpace(doctorId))
+                throw new ArgumentException("DoctorId cannot be null or empty", nameof(doctorId));
+
+            if (!Guid.TryParse(doctorId, out var doctorGuid))
+                throw new ArgumentException("Invalid DoctorId format. Expected a valid GUID.", nameof(doctorId));
+
+            // Find active subscription
+            var spec = new ActiveSubscriptionByDoctorSpecification(doctorGuid);
+            var subscription = await _unitOfWork.Repository<DoctorSubscription, int>()
+                .GetWithSpecficationAsync(spec);
+
+            if (subscription == null)
+                throw new KeyNotFoundException("No active subscription found to delete");
+
+            // Delete subscription
+            _unitOfWork.Repository<DoctorSubscription, int>().Delete(subscription);
+
+            // Update doctor profile to remove subscription flag
+            var doctorProfile = await _unitOfWork.Repository<DoctorProfile, Guid>().GetAsync(doctorGuid);
+            if (doctorProfile != null)
+            {
+                doctorProfile.HasSubscription = false;
+                _unitOfWork.Repository<DoctorProfile, Guid>().Update(doctorProfile);
+            }
+
+            await _unitOfWork.CompleteAsync();
+        }
     }
 }

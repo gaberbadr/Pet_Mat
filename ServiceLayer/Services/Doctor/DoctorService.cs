@@ -105,6 +105,22 @@ namespace ServiceLayer.Services.Doctor
             if (user == null)
                 throw new KeyNotFoundException("User not found");
 
+            // Get doctor profile to obtain DoctorId (Guid)
+            var profile = (await _unitOfWork.Repository<DoctorProfile, Guid>()
+                .FindAsync(dp => dp.UserId == userId)).FirstOrDefault();
+
+            // Delete doctor subscriptions if profile exists
+            if (profile != null)
+            {
+                var subscriptions = await _unitOfWork.Repository<DoctorSubscription, int>()
+                    .FindAsync(ds => ds.DoctorId == profile.Id);
+
+                foreach (var subscription in subscriptions)
+                {
+                    _unitOfWork.Repository<DoctorSubscription, int>().Delete(subscription);
+                }
+            }
+
             // Delete doctor ratings
             var ratings = await _unitOfWork.Repository<DoctorRating, int>()
                 .FindAsync(dr => dr.DoctorId == userId);
@@ -115,9 +131,6 @@ namespace ServiceLayer.Services.Doctor
             }
 
             // Delete doctor profile
-            var profile = (await _unitOfWork.Repository<DoctorProfile, Guid>()
-                .FindAsync(dp => dp.UserId == userId)).FirstOrDefault();
-
             if (profile != null)
             {
                 _unitOfWork.Repository<DoctorProfile, Guid>().Delete(profile);
@@ -150,7 +163,6 @@ namespace ServiceLayer.Services.Doctor
             {
                 await _userManager.RemoveFromRoleAsync(user, "Doctor");
             }
-
 
             await _unitOfWork.CompleteAsync();
 

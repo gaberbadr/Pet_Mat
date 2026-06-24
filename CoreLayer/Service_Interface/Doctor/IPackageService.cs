@@ -28,5 +28,8 @@ namespace CoreLayer.Service_Interface.Doctor
         Task UpdateSubscriptionStatusAsync(string paymentIntentId, bool isSuccessful);
 
         Task<SubscriptionDto> GetActiveSubscriptionAsync(string doctorId);
+
+        /// <summary>Deletes the current active subscription for a doctor.</summary>
+        Task DeleteSubscriptionAsync(string doctorId);
     }
 }

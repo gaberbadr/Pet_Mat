@@ -92,5 +92,34 @@ namespace petmat.Controllers
                 return BadRequest(new ApiErrorResponse(400, ex.Message));
             }
         }
+
+        /// <summary>Delete the current active subscription.</summary>
+        // DELETE api/doctor/subscription/cancel
+        [HttpDelete("cancel")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CancelSubscription()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            try
+            {
+                // Resolve doctor profile Id from the authenticated user's id
+                var profile = await _doctorService.GetDoctorProfileAsync(userId);
+                var doctorProfileId = profile.Id.ToString();
+
+                await _subscriptionService.DeleteSubscriptionAsync(doctorProfileId);
+                return Ok(new { message = "Subscription cancelled successfully" });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiErrorResponse(404, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiErrorResponse(400, ex.Message));
+            }
+        }
     }
 }
