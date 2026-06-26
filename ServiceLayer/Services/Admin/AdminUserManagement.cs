@@ -95,9 +95,9 @@ namespace ServiceLayer.Services.Admin
             };
         }
 
-        public async Task<List<BlockedUserDto>> GetBlockedUsersAsync()
+        public async Task<List<AdminBlockedUserDto>> GetBlockedUsersAsync()
         {
-            var blockedUsers = new List<BlockedUserDto>();
+            var blockedUsers = new List<AdminBlockedUserDto>();
             var allUsers = _userManager.Users.Where(u => !u.IsActive).ToList();
 
             foreach (var user in allUsers)
@@ -108,7 +108,7 @@ namespace ServiceLayer.Services.Admin
                 if (userRoles.Contains("Admin"))
                     continue;
 
-                blockedUsers.Add(new BlockedUserDto
+                blockedUsers.Add(new AdminBlockedUserDto
                 {
                     UserId = user.Id,
                     Email = user.Email,

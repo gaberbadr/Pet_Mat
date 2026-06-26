@@ -13,7 +13,7 @@ namespace CoreLayer.Service_Interface.Admin
         // ==================== USER BLOCKING ====================
         Task<UserBlockResponseDto> BlockUserAsync(string userId);
         Task<UserBlockResponseDto> UnblockUserAsync(string userId);
-        Task<List<BlockedUserDto>> GetBlockedUsersAsync();
+        Task<List<AdminBlockedUserDto>> GetBlockedUsersAsync();
 
         // ==================== ROLE MANAGEMENT ====================
         Task<RoleOperationResponseDto> AddAdminAssistantRoleAsync(string userId);

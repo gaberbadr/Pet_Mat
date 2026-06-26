@@ -76,10 +76,10 @@ namespace petmat.Controllers
 
 
         /// Get all blocked users
-        [ProducesResponseType(typeof(List<BlockedUserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(List<AdminBlockedUserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
         [HttpGet("blocked-users")]
-        public async Task<ActionResult<List<BlockedUserDto>>> GetBlockedUsers()
+        public async Task<ActionResult<List<AdminBlockedUserDto>>> GetBlockedUsers()
         {
             try
             {

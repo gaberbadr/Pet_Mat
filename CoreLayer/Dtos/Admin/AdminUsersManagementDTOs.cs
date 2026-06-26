@@ -31,7 +31,7 @@ namespace CoreLayer.Dtos.Admin
             public string Message { get; set; }
         }
 
-        public class BlockedUserDto
+        public class AdminBlockedUserDto
         {
             public string UserId { get; set; }
             public string Email { get; set; }
