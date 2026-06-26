@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -96,6 +95,32 @@ namespace ServiceLayer.Services.Admin
             };
         }
 
+        public async Task<List<BlockedUserDto>> GetBlockedUsersAsync()
+        {
+            var blockedUsers = new List<BlockedUserDto>();
+            var allUsers = _userManager.Users.Where(u => !u.IsActive).ToList();
+
+            foreach (var user in allUsers)
+            {
+                var userRoles = await _userManager.GetRolesAsync(user);
+
+                // Skip Admin users from the blocked list
+                if (userRoles.Contains("Admin"))
+                    continue;
+
+                blockedUsers.Add(new BlockedUserDto
+                {
+                    UserId = user.Id,
+                    Email = user.Email,
+                    FullName = $"{user.FirstName} {user.LastName}",
+                    BlockedDate = user.LockoutEnd?.UtcDateTime ?? DateTime.UtcNow,
+                    Roles = userRoles.ToList()
+                });
+            }
+
+            return blockedUsers.OrderByDescending(u => u.BlockedDate).ToList();
+        }
+
         // ==================== ROLE MANAGEMENT ====================
 
         public async Task<RoleOperationResponseDto> AddAdminAssistantRoleAsync(string userId)
@@ -143,6 +168,15 @@ namespace ServiceLayer.Services.Admin
 
             if (profile != null)
             {
+                // Delete doctor subscriptions
+                var subscriptions = await _unitOfWork.Repository<DoctorSubscription, int>()
+                    .FindAsync(ds => ds.DoctorId == profile.Id);
+
+                foreach (var subscription in subscriptions)
+                {
+                    _unitOfWork.Repository<DoctorSubscription, int>().Delete(subscription);
+                }
+
                 _unitOfWork.Repository<DoctorProfile, Guid>().Delete(profile);
             }
 

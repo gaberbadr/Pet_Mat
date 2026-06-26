@@ -30,5 +30,14 @@ namespace CoreLayer.Dtos.Admin
             public bool IsActive { get; set; }
             public string Message { get; set; }
         }
+
+        public class BlockedUserDto
+        {
+            public string UserId { get; set; }
+            public string Email { get; set; }
+            public string FullName { get; set; }
+            public DateTime BlockedDate { get; set; }
+            public List<string> Roles { get; set; }
+        }
     }
 }

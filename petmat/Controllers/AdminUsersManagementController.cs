@@ -74,6 +74,24 @@ namespace petmat.Controllers
             }
         }
 
+
+        /// Get all blocked users
+        [ProducesResponseType(typeof(List<BlockedUserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+        [HttpGet("blocked-users")]
+        public async Task<ActionResult<List<BlockedUserDto>>> GetBlockedUsers()
+        {
+            try
+            {
+                var result = await _adminUserManagement.GetBlockedUsersAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiErrorResponse(500, $"An error occurred: {ex.Message}"));
+            }
+        }
+
         // ==================== ROLE MANAGEMENT ====================
 
 

@@ -13,7 +13,7 @@ namespace petmat.Controllers
             return Ok(new
             {
                 message = "Welcome to PetMat API",
-                version = "5.1",
+                version = "5.2",
                 status = "Running",
                 documentation = $"{Request.Scheme}://{Request.Host}/swagger",
                 endpoints = new
